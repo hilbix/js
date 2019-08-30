@@ -15,7 +15,7 @@ js:
 update:
 	git remote update -p
 	git merge --ff-only origin/master
-	st="$(git status --porcelain)" && [ -z "$st" ]
+	st="$$(git status --porcelain)" && [ -z "$$st" ]
 	git submodule update --recursive --init
 	$(MAKE)
 
