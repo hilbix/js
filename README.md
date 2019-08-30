@@ -15,11 +15,11 @@ Prep:
 
 Use:
 
-	ln -s --relative sub/lib/js /var/www/html/lib
+	ln -s --relative sub/lib/js /var/www/html/js
 
 HTML:
 
-	<script src="/lib/all.js"></script>
+	<script src="/js/all.js"></script>
 
 Update/Edits/etc.:
 
@@ -31,8 +31,8 @@ Notes:
 - This repo might change drastically, better fork before use
 - Some things might be very experimental
 - The `<script>` tag might change over time
-- `all.js` usually is not what you want!  Only pick what you need
-- `js*/all.js` is created by `make`, so you can create your own `js*`
+- `js*/all.js` is created by `make`, so you can create your own `js*` bundles
+- `js/all.js` usually is not what you want!  Only pick what you need
 
 
 ## FAQ
@@ -70,7 +70,7 @@ AMD?  UMD?  CommonJS?
 
 Minified?
 
-- Did never need that yet, as is makes debugging more difficult.
+- Did not yet consider that, as is makes debugging more difficult.
   No, debugging is not just reading/presenting, debugging is edit+test as well.
 - Minification must be done with official standard Debian packages only, else I will never use it.
   So no, I repeat, absolutely no external references or downloads or requirements, except pure `apt-get`.
