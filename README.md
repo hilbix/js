@@ -87,7 +87,7 @@ License?
 
 - **Warning!**  This License does not extend to submodules!
 
-- This Works is placed under the terms of the Copyright Less License,
+- This Works is placed under the terms of the Copyright Less License,  
   see file COPYRIGHT.CLL.  USE AT OWN RISK, ABSOLUTELY NO WARRANTY.
 
 - Read:  This is free as in free beer, free speech and free baby.
