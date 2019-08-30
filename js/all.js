@@ -32,7 +32,7 @@ ajax.post=function(url,func,args){ajax.send(url,func,'POST',args)};
 //ajax.submit=function(url,elm,frm){var e=$(elm);var f=function(r){e.innerHTML=r};ajax.post(url,f,ajax.serialize(frm))};
 
 
-/// js/showhide.js ///
+/// js/show-hide.js ///
 
 'use strict';
 //require ajax.js
