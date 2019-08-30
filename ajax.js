@@ -7,7 +7,7 @@
 
 function $$$(e,s){e=$(e); e.innerHTML=s; return e};
 function $$(e){return $(e).innerHTML};
-function $(e){if(typeof e=='string')e=document.getElementById(e);return e};
+function $(e){return typeof e=='string' ? document.getElementById(e) : e};
 var __aps = Array.prototype.slice;
 function Ary(){var a=[];for(var i=0;i<arguments.length;i+=2)a=a.concat(__aps.call(arguments[i],arguments[i+1]?arguments[i+1]:0));return a}
 function __(e){if(typeof e=='string')e=document.createElement(e);if(arguments.length>1){var x=__.apply(this,Ary(arguments,1));if(!(x instanceof Array))x=[x];for(var i=0; i<x.length; i++)e.appendChild(x[i])};return e};
