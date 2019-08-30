@@ -1,0 +1,9 @@
+container:
+  image: gcc:latest
+
+make_task:
+  git_script: git submodule update --init
+  make_script: make
+  update_script: make update
+  test_script: make test
+
