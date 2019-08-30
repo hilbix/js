@@ -2,3 +2,6 @@
 	path = tino
 	url = ./
 	branch = tino
+[submodule "libsodium.master"]
+	path = libsodium.master
+	url = https://github.com/jedisct1/libsodium.js.git

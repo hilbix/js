@@ -1,0 +1,1 @@
+../libsodium.master/dist/browsers/sodium.js
