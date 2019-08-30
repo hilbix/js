@@ -1,4 +1,5 @@
-> Not ready for use yet
+[![push status](https://api.cirrus-ci.com/github/hilbix/js.svg?branch=master)](https://cirrus-ci.com/github/hilbix/js/master)
+
 
 # Javascript Snipptes
 
