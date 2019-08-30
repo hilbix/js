@@ -23,7 +23,7 @@ update:
 test:
 	st="$$(git status --porcelain)" && [ -z "$$st" ] || { git status; echo; echo ERROR: git status not clean; echo; false; }
 	git remote update -p && h="`git rev-parse HEAD`" && m="`git rev-parse master`" && o="`git rev-parse origin/master`" && test ".$$h" = ".$$m" && test ".$$h" = ".$$o" || { echo "mismatch:"; echo "master $$m"; echo "head   $$h"; echo "origin $$o"; false; }
-	git submodule foreach --recursive 'git remote update -p && h="`git rev-parse HEAD`" && o="`git rev-parse "origin/$${name#*.}"`" && test ".$$h" = ".$$o" || { echo "mismatch $$name:"; echo "HEAD   $$h"; echo "origin $$o"; false; }'
+	git submodule foreach 'git remote update -p && h="`git rev-parse HEAD`" && o="`git rev-parse "origin/$${name#*.}"`" && test ".$$h" = ".$$o" || { echo "mismatch $$name:"; echo "HEAD   $$h"; echo "origin $$o"; false; }'
 	$(MAKE)
 	st="$$(git status --porcelain)" && [ -z "$$st" ] || { git status; echo; echo ERROR: git status not clean; echo; false; }
 	echo && echo OK: local and remote git status look clean && echo

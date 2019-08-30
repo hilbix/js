@@ -2,7 +2,7 @@ container:
   image: gcc:latest
 
 make_task:
-  git_script: git submodule update --init
+  git_script: git submodule update --init --recursive
   make_script: make
   update_script: make update
   test_script: make test
