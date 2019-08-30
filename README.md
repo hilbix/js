@@ -40,6 +40,23 @@ Notes:
 - `js/all.js` usually is not what you want!  Only pick what you need
 
 
+## Naming
+
+`js/X.js` defines namespace `X`.
+
+- A module wich provides `window.X` should be found at `js/X.js`
+- Other modules should use a dash (`-`) in their name.  The only exception is `js/all.js`
+- Assets of `js/X.js` shall be in `js/X/`, `css/X.css`, `img/X/` etc.
+- Softlinks are your friend.
+
+Reserved names:
+
+- Uppercase names are reserved for classes.
+- Names starting with a dot or a digit.
+- `$` is reserved for future loader functions as an alias of `/`.  
+  (`Main$Class` then is searched under `js/Main/Class.js`)
+
+
 ## Hacks/Quirks
 
 - Submodules branches are currently a hack:
