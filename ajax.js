@@ -4,19 +4,6 @@
 // Rest portion:
 // This Works is placed under the terms of the Copyright Less License,
 // see file COPYRIGHT.CLL.  USE AT OWN RISK, ABSOLUTELY NO WARRANTY.
-//
-// $Log$
-// Revision 1.5  2011/03/30 21:29:12  tino
-// _a_
-//
-// Revision 1.4  2011-03-23 09:58:01  tino
-// improved everything
-//
-// Revision 1.3  2011-03-17 00:15:46  tino
-// HEAD and If-Modified-Since
-//
-// Revision 1.2  2011-03-16 11:53:29  tino
-// __() ___()
 
 function $$$(e,s){e=$(e); e.innerHTML=s; return e};
 function $$(e){return $(e).innerHTML};
@@ -39,18 +26,4 @@ ajax.head=function(u,f,lm){ajax.send(u,f,'HEAD',null,lm?function(x){x.setRequest
 ajax.post=function(url,func,args){ajax.send(url,func,'POST',args)};
 //ajax.update=function(url,elm){var e=$(elm);var f=function(r){e.innerHTML=r};ajax.get(url,f)};
 //ajax.submit=function(url,elm,frm){var e=$(elm);var f=function(r){e.innerHTML=r};ajax.post(url,f,ajax.serialize(frm))};
-
-function hide(s)
-{
-var e=$(s);
-if (e.style.display!="none")
-  e.olddisplay = e.style.display;
-e.style.display="none";
-}
-function show(s)
-{
-var e=$(s);
-if (e.style.display=="none")
-  e.style.display = e.olddisplay;
-}
 
