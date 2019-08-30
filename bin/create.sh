@@ -17,7 +17,6 @@ do
 	printf '/// automatically generated%s%q ///\n' "${REMOTE+ from }" "$REMOTE"
 	for b in "$a/"*.js;
 	do
-		case "$b" in (*.js) ;; (*) continue;; esac;	# ignore assets not ending on *.js
 		[ -L "$b" ] || continue;			# ignore non-softlinks
 		[ -d "$b" ] && continue;			# ignore subdirs, this are dynamic modules
 		[ -s "$b" ] || continue;			# ignore empty files
@@ -30,7 +29,8 @@ do
 		o cat "$b";
 	done
 	} > "$a/all.js.new" || exit;
-	o mv -f "$a/all.js.new" "$a/all.js";
+	cmp -s "$a/all.js.new" "$a/all.js" && { rm -f "$a/all.js.new"; continue; };
+	o mv -vf "$a/all.js.new" "$a/all.js";
 done;
 
 :	# signal success
