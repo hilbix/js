@@ -5,7 +5,7 @@
 > If in doubt, either create your own `js*` or do not use `all.js` and use the individual snippets.
 
 
-# Javascript Snipptes
+# Javascript Snippets
 
 All my Javascript needs, bundled into one single repo with submodules.
 
