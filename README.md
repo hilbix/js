@@ -1,5 +1,9 @@
 [![push status](https://api.cirrus-ci.com/github/hilbix/js.svg?branch=master)](https://cirrus-ci.com/github/hilbix/js/master)
 
+> **Warning!**  Everything in `js/all.js` probably will change as this evolves.
+>
+> If in doubt, either create your own `js*` or do not use `all.js` and use the individual snippets.
+
 
 # Javascript Snipptes
 
@@ -34,6 +38,14 @@ Notes:
 - The `<script>` tag might change over time
 - `js*/all.js` is created by `make`, so you can create your own `js*` bundles
 - `js/all.js` usually is not what you want!  Only pick what you need
+
+
+## Hacks/Quirks
+
+- Submodules branches are currently a hack:
+  - If the submodule is named `name.BRANCH`, then the branch `BRANCH` is used.
+  - If the submodule is named `name` (without a dot), then the branch `name` is used.
+  - In future, perhaps I will parse `.gitmodules` to take the branch from there.
 
 
 ## FAQ
