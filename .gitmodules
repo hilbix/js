@@ -1,0 +1,4 @@
+[submodule "tino"]
+	path = tino
+	url = ../js.git
+	branch = tino
