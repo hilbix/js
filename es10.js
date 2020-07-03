@@ -14,6 +14,10 @@ var D = ('debug' in document.currentScript.dataset) ? (...a) => console.log('DEB
 
 function isString(s)	{ return typeof s=='string' || s instanceof String }
 
+function GET(u) { return fetch(u, { cache:'no-cache' }) }
+function PUTJSON(u,d) { return fetch(u, { cache:'no-cache', method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }) }
+function POSTJSON(u,d) { return fetch(u, { cache:'no-cache', method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }) }
+
 try {
   new WeakRef({});
 } catch {
@@ -124,6 +128,7 @@ class _E
   get DIV()		{ return this._MK('div') }
   get TR()		{ return this._MK('tr') }
   get TD()		{ return this._MK('td') }
+  get TH()		{ return this._MK('th') }
   get SPAN()		{ return this._MK('span') }
   get CHECKBOX()	{ return this._MK('input', {type:'checkbox'}) }
   get INPUT()		{ return this._MK('input', {type:'text'}) }
