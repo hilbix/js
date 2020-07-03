@@ -113,11 +113,14 @@ class _E
 
   get $text()		{ return this.$.innerText }
   set $text(s)		{ return this.$.innerText = s }
+  get $value()		{ return this.$.value }
+  set $value(v)		{ this.$.value = v }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
   TEXT(s)		{ return this._ADD(document.createTextNode(s)) }
   text(s)		{ this.TEXT(s); return this }
+  value(s)		{ this.$value = s; return this }
   get DIV()		{ return this._MK('div') }
   get TR()		{ return this._MK('tr') }
   get TD()		{ return this._MK('td') }
@@ -144,7 +147,7 @@ class _E
   add(...c)		{ if (this.$) for (var a of c) this.$.appendChild(E(a).$); return this }
   attach(p)		{ E(p).add(this); return this }
 
-  clr()			{ const e=this.$; var a; while (a = this.firstChild) a.remove(); return this; }
+  clr()			{ const e=this.$; var a; while (a = e.firstChild) a.remove(); return this; }
 
   Run(fn, ...a)		{ return Promise.resolve((async () => fn.apply(this, a))()) }
   run(...a)		{ this.Run(...a); return this }
