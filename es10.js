@@ -126,6 +126,7 @@ class _E
   text(s)		{ this.TEXT(s); return this }
   value(s)		{ this.$value = s; return this }
   get DIV()		{ return this._MK('div') }
+  get A()		{ return this._MK('a') }
   get TR()		{ return this._MK('tr') }
   get TD()		{ return this._MK('td') }
   get TH()		{ return this._MK('th') }
@@ -148,6 +149,8 @@ class _E
 
   rm()			{ this.remove(); return this }
 
+  target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
+  href(link)		{ return this.attr({href:link}) }
   attr(a)		{ if (a) for (var b in a) this.$.setAttribute(b, a[b]); return this }
   add(...c)		{ if (this.$) for (var a of c) this.$.appendChild(E(a).$); return this }
   attach(p)		{ E(p).add(this); return this }
