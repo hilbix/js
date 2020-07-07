@@ -37,7 +37,8 @@ var E_	= new WeakMap();
 window.E = function (e)
 {
 //  D('E', e);
-  if (e instanceof _E || e === void 0) return e;
+  if (e === void 0) return new _E();
+  if (e instanceof _E) return e;
   if (isString(e)) e = document.getElementById(e);
   if (!e)
     return e;
@@ -165,6 +166,7 @@ class _E
   target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
   href(link)		{ return this.attr({href:link}) }
   attr(a)		{ if (a) for (var b in a) this.$.setAttribute(b, a[b]); return this }
+  style(a)		{ if (a) for (var b in a) this.$.style[b]=a[b]; return this }
   add(...c)		{ if (this.$) for (var a of c) this.$.appendChild(E(a).$); return this }
   attach(p)		{ E(p).add(this); return this }
 
@@ -172,5 +174,19 @@ class _E
 
   Run(fn, ...a)		{ return Promise.resolve((async () => fn.apply(this, a))()) }
   run(...a)		{ this.Run(...a); return this }
+
+  Loaded()		{ return this.$.decode() }
   }
+
+function arrayCmpShallow(a,b)
+{
+  if (!a || !b || a.length != b.length)
+    return false;
+
+  for (var i=a.length; --i>=0; )
+    if (a[i] !== b[i])
+      return false;
+
+  return true;
+}
 
