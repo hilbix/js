@@ -113,6 +113,7 @@ class _E
   {
   constructor(e)	{ this._e = e }
   get $()		{ return this._e; }
+  get $$()		{ return E(this._e.parentNode); }
   E(e)			{ return this.e(e).$ }
 
 // setting is NOT supported
@@ -123,18 +124,23 @@ class _E
   set $text(s)		{ return this.$.innerText = s }
   get $value()		{ return this.$.value }
   set $value(v)		{ this.$.value = v }
+  get $src()		{ return this.$.src }
+  set $src(u)		{ this.$.src = u }
+  get $alt()		{ return this.$.alt }
+  set $alt(u)		{ this.$.alt = u }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
   TEXT(s)		{ return this._ADD(document.createTextNode(s)) }
   text(s)		{ this.TEXT(s); return this }
   value(s)		{ this.$value = s; return this }
-  get $src()		{ return this.$.src }
-  src(u)		{ this.$.src = u; return this }
+  src(s)		{ this.$src = s; return this }
+  alt(s)		{ this.$alt = s; return this }
   get DIV()		{ return this._MK('div') }
   get A()		{ return this._MK('a') }
   get IMG()		{ return this._MK('img') }
   get TR()		{ return this._MK('tr') }
+  get BR()		{ return this._MK('br') }
   get TD()		{ return this._MK('td') }
   get TH()		{ return this._MK('th') }
   get SPAN()		{ return this._MK('span') }
