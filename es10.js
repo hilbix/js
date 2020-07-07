@@ -12,6 +12,8 @@
 
 var D = ('debug' in document.currentScript.dataset) ? (...a) => console.log('DEBUG', ...a) : (...a) => void 0;
 
+const AsyncFun = Object.getPrototypeOf(async function(){}).constructor;
+
 function isString(s)	{ return typeof s=='string' || s instanceof String }
 
 function GET(u) { return fetch(u, { cache:'no-cache' }) }
@@ -37,6 +39,8 @@ window.E = function (e)
 //  D('E', e);
   if (e instanceof _E || e === void 0) return e;
   if (isString(e)) e = document.getElementById(e);
+  if (!e)
+    return e;
 
   var t = E_.get(e);
   if (t) { t = t.deref(); if (t) return t; }
@@ -125,8 +129,11 @@ class _E
   TEXT(s)		{ return this._ADD(document.createTextNode(s)) }
   text(s)		{ this.TEXT(s); return this }
   value(s)		{ this.$value = s; return this }
+  get $src()		{ return this.$.src }
+  src(u)		{ this.$.src = u; return this }
   get DIV()		{ return this._MK('div') }
   get A()		{ return this._MK('a') }
+  get IMG()		{ return this._MK('img') }
   get TR()		{ return this._MK('tr') }
   get TD()		{ return this._MK('td') }
   get TH()		{ return this._MK('th') }
