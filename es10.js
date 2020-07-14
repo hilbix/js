@@ -41,11 +41,18 @@ function OKO(...a) { return [ v => OK(v, ...a), e => KO(e, ...a) ] }
 const P = (fn,...a) => Promise.resolve().then(_ => fn(...a));
 const PC = (fn,self,...a) => Promise.resolve().then(_ => _FPAC(fn, self, a));
 
+const raise	= e => { throw e }
+
 // fetch() promises
 const Get	= u => fetch(u, { cache:'no-cache' })
 const _PPJ	= m => (u,d) => fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) })
 const PostJSON	= _PPJ('POST')
 const PutJSON	= _PPJ('PUT')
+
+const Json	= p => p.then(r => r.status==200 ? r.json() : raise(r.status))
+const Text	= p => p.then(r => r.status==200 ? r.text() : raise(r.status))
+const GetText	= u => Text(Get(u))
+const GetJSON	= u => Json(Get(u))
 
 try {
   new WeakRef({});
