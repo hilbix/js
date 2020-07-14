@@ -45,9 +45,12 @@ const raise	= e => { throw e }
 
 // fetch() promises
 const Get	= u => fetch(u, { cache:'no-cache' })
-const _PPJ	= m => (u,d) => fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) })
-const PostJSON	= _PPJ('POST')
-const PutJSON	= _PPJ('PUT')
+const _MTFUD	= (m,t,f) => (u,d) => fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':t}, body:f ? f(d) : d })
+const PostText	= _MTFUD('POST', 'text/plain')
+const PutText	= _MTFUD('PUT', 'text/plain')
+const _MUJ	= m => _MTFUD(m, 'application/json', JSON.stringify)
+const PostJSON	= _MUJ('POST')
+const PutJSON	= _MUJ('PUT')
 
 const Json	= p => p.then(r => r.status==200 ? r.json() : raise(r.status))
 const Text	= p => p.then(r => r.status==200 ? r.text() : raise(r.status))
