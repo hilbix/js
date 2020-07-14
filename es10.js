@@ -3,26 +3,55 @@
 // <script src="es10.js" data-debug></script>
 // data-debug enables debugging
 
-// Rules for members in classes:
+// Rules for members in classes (NOT on toplevel functions):
 // Uppercase or CamelCase which starts uppercase return "async function" or "Promise".
 // All lowercase returns "this".  Always.
 // Starting with $ are getter/setter with just $ is what you expect most (the wrapped object, etc.)
 // mixedCaps or functions with _ in the name return anything.
 // Starting with _ is private, the _ is skipped for the rules above.
 
-var D = ('debug' in document.currentScript.dataset) ? (...a) => console.log('DEBUG', ...a) : (...a) => void 0;
+// <script src="*.js" data-debug></script>
+var DEBUGGING = 'debug' in document.currentScript.dataset;	// you can change this later
 
-const AsyncFun = Object.getPrototypeOf(async function(){}).constructor;
+const _FPAC = Function.prototype.apply.call;
+const _FPCC = Function.prototype.call.call;
+const DONOTHING = function(){}					// The "do nothing" function
 
-function isString(s)	{ return typeof s=='string' || s instanceof String }
+// sorted ABC, commented names are below
+const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
+const C = (fn,...a) => function (...b) { return fn(...a,...b) }	// Curry (allows to bind this)
+const CA = (fn,self,a) => (...b) => _FPCC(fn,self,...a,...b);	// Curry Apply (with self)
+const CC = (fn,self,...a) => CA(fn,self,a);			// Curry Call (with self)
+//const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
+const D = (...a) => DEBUGGING ? console.log('DEBUG', ...a) : void 0;
+const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
+//DONOTHING
+const DomReady	= new Promise(ok => document.addEventListener('DOMContentLoaded', ok));
+//E()
+//Get()	fetch via 'GET'
+const isString	= s => typeof s=='string' || s instanceof String;
+//KO()
 
-function GET(u) { return fetch(u, { cache:'no-cache' }) }
-function PUTJSON(u,d) { return fetch(u, { cache:'no-cache', method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }) }
-function POSTJSON(u,d) { return fetch(u, { cache:'no-cache', method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }) }
+// Promise.resolve(1).then(OK).catch(KO).then(...OKO('mypromise'))
+function KO(e, ...a) { D('catch', v, ...a); throw e }
+function OK(v, ...a) { D('then', v, ...a); return v }
+function OKO(...a) { return [ v => OK(v, ...a), e => KO(e, ...a) ] }
+
+// P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
+const P = (fn,...a) => Promise.resolve().then(_ => fn(...a));
+const PC = (fn,self,...a) => Promise.resolve().then(_ => _FPAC(fn, self, a));
+
+// fetch() promises
+const Get	= u => fetch(u, { cache:'no-cache' })
+const _PPJ	= m => (u,d) => fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) })
+const PostJSON	= _PPJ('POST')
+const PutJSON	= _PPJ('PUT')
 
 try {
   new WeakRef({});
 } catch {
+  // Not a working WeakRef mixin
+  // (This cannot be implemented with WeakMap)
   window.WeakRef = class
     {
     constructor(o) { this._o = o }
@@ -30,11 +59,13 @@ try {
     }
 }
 
-(function(f){f()})(function(){
+const E = (function(){
 
-var E_	= new WeakMap();
+const weak_refs = new WeakMap();
 
-window.E = function (e)
+// Without real WeakMap this is a GC nightmare
+// We want E to stay along as long as the referenced object stays
+return function (e)
 {
 //  D('E', e);
   if (e === void 0) return new _E();
@@ -43,22 +74,22 @@ window.E = function (e)
   if (!e)
     return e;
 
-  var t = E_.get(e);
-  if (t) { t = t.deref(); if (t) return t; }
+  var w = weak_refs.get(e);
+  if (w) return t.deref();	// t is WeakRef
 
 //  D('E',e);
-  t	= new _E(e);
-  E_.set(e, new WeakRef(t));		// both sides are weak!
-  return t;
+  w	= new _E(e);
+  E_.set(e, new WeakRef(w));	// both sides are weak!
+  return w;
 }
-})
+})();
 
 // ON-Event class (in the capture phase by default)
 // If the handling returns trueish, processing of the event stops.
-// this is set to the ON-instance within the function (if not bound)
-// calls fn(event, ...a)	for: ON('event').add(fn, ...a).attach(element)
-// calls fn(event, elem, ...a)	for: elem = E(e).on(fn, ...a)
-// You can also .detach() this easily, no more error prone bookkeeping required
+// `this` is set to the ON-instance within the function (if not bound elsewhere)
+// calls fn(event, ...a)	for: ON('event').add(fn, ...a).attach(E(element))
+// calls fn(event, elem, ...a)	for: elem = E(element).on(fn, ...a)
+// Use this.detach() to remove the error handler again, no error prone bookkeeping required
 class ON
   {
   constructor(type, capture=true)
@@ -108,7 +139,7 @@ class ON
     }
   }
 
-// This is an element.
+// This is an element wrapper (not really like jQuery).
 // var input = E().DIV.text('hello world ').INPUT;
 class _E
   {
@@ -172,7 +203,7 @@ class _E
 
   clr()			{ const e=this.$; var a; while (a = e.firstChild) a.remove(); return this; }
 
-  Run(fn, ...a)		{ return Promise.resolve((async () => fn.apply(this, a))()) }
+  Run(fn, ...a)		{ return PC(fn, this, a) }
   run(...a)		{ this.Run(...a); return this }
 
   Loaded()		{ return this.$.decode() }
