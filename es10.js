@@ -57,6 +57,46 @@ const Text	= p => p.then(r => r.status==200 ? r.text() : raise(r.status))
 const GetText	= u => Text(Get(u))
 const GetJSON	= u => Json(Get(u))
 
+class Cancelled
+  {
+  constructor(...a) { self._a = a; }
+  get cancelled() { return self._a }
+  };
+
+// r = single_run(fn, a);
+// r(b).then(retval => {}, err => { if (err.cancelled) was_cancelled(err); else other_error(err); })
+// - for now single_run() returns just a function to call and not a class
+// - r(b) asynchronosuly runs fn(a,b) if fn() not already runs
+// - if fn(a,b) still runs, r(x) will invoke fn(a,x) as soon, as fn(a,b) finishes
+// - Only remembers the very last call to r(x) is remembered, all intermediate other calls are Cancelled()!
+// - r() returns a Promise which resolves to the result (or rejected if Cancelled()/errors)
+//   You can check if (e.chancelled) // function was cancelled
+const single_run = (fn, ...a) =>
+  {
+    var invoke, running;
+
+    async function run(...a)
+      {
+        await void 0;	// run asynchrounously
+        return fn(...a);	// in case it is a Promise
+      };
+    async function loop()
+      {
+        running = invoke;
+        invoke = void 0;
+        if (!running)
+          await run(...running[0], ...running[1]).then(running[2], running[3]).finally(loop)
+      }
+    return (...b) => new Promise(ok, ko) =>
+      {
+        if (invoke)
+          invoke[3](new Cancelled(a,b));
+        invoke = [a,b,ok,ko];
+        if (!running)
+          loop();
+      }
+  }
+
 try {
   new WeakRef({});
 } catch {
@@ -218,6 +258,41 @@ class _E
 
   Loaded()		{ return this.$.decode() }
   }
+
+// asynchronous Bidirectional communication queue
+// q = new Q()
+// popdata = await q.Push(pushdata)	=> waits until data was popped, returns the popdata
+// pushdata = await q.Pop(popdata)	=> waits until data was pushed, sends popdata to sender
+class Q
+  {
+  constructor() { this._i = []; this._o = []; this._single = Single(_ => this._Step()) }
+
+  Push(...d)	{ return this.Proc(this._i, d) }
+  Pop(...d)	{ return this.Proc(this._o, d) }
+  Proc(a,d)
+    {
+      const p = d.map(m => new Promise((ok,ko) => a.push([m, ok, ko])))
+      this._step();
+      return p.length==1 ? p[0] : Promise.all(p)
+    }
+  async _Step()
+    {
+      while (this._i && this._o)
+        {
+          const i = this._i.shift();
+          const o = this._o.shift();
+
+          await void 0;	// synchronous up to here, async from here
+          o[1](i[0]);
+          i[1](o[0]);
+        }
+    }
+  _step(x)
+    {
+      this.single()
+      return this;
+    }
+  };
 
 function arrayCmpShallow(a,b)
 {
