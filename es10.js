@@ -13,14 +13,14 @@
 // <script src="*.js" data-debug></script>
 var DEBUGGING = 'debug' in document.currentScript.dataset;	// you can change this later
 
-const _FPAC = Function.prototype.apply.call;
-const _FPCC = Function.prototype.call.call;
+const _FPA = Function.prototype.apply;
+const _FPC = Function.prototype.call;
 const DONOTHING = function(){}					// The "do nothing" function
 
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
 const C = (fn,...a) => function (...b) { return fn(...a,...b) }	// Curry (allows to bind this)
-const CA = (fn,self,a) => (...b) => _FPCC(fn,self,...a,...b);	// Curry Apply (with self)
+const CA = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);	// Curry Apply (with self)
 const CC = (fn,self,...a) => CA(fn,self,a);			// Curry Call (with self)
 //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
 const D = (...a) => DEBUGGING ? console.log('DEBUG', ...a) : void 0;
@@ -39,7 +39,7 @@ function OKO(...a) { return [ v => OK(v, ...a), e => KO(e, ...a) ] }
 
 // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
 const P = (fn,...a) => Promise.resolve().then(_ => fn(...a));
-const PC = (fn,self,...a) => Promise.resolve().then(_ => _FPAC(fn, self, a));
+const PC = (fn,self,...a) => Promise.resolve().then(_ => _FPA.call(fn, self, a));
 
 const raise	= e => { throw e }
 
@@ -77,7 +77,7 @@ const single_run = (fn, ...a) =>
 
     async function run(...a)
       {
-        await void 0;	// run asynchrounously
+        await void 0;		// run asynchrounously
         return fn(...a);	// in case it is a Promise
       };
     async function loop()
@@ -87,14 +87,14 @@ const single_run = (fn, ...a) =>
         if (!running)
           await run(...running[0], ...running[1]).then(running[2], running[3]).finally(loop)
       }
-    return (...b) => new Promise(ok, ko) =>
+    return (...b) => new Promise((ok, ko) =>
       {
         if (invoke)
           invoke[3](new Cancelled(a,b));
         invoke = [a,b,ok,ko];
         if (!running)
           loop();
-      }
+      })
   }
 
 try {
@@ -111,27 +111,27 @@ try {
 
 const E = (function(){
 
-const weak_refs = new WeakMap();
+  const weak_refs = new WeakMap();
 
-// Without real WeakMap this is a GC nightmare
-// We want E to stay along as long as the referenced object stays
-return function (e)
-{
-//  D('E', e);
-  if (e === void 0) return new _E();
-  if (e instanceof _E) return e;
-  if (isString(e)) e = document.getElementById(e);
-  if (!e)
-    return e;
+  // Without real WeakMap this is a GC nightmare
+  // We want E to stay along as long as the referenced object stays
+  return function (e)
+    {
+//    D('E', e);
+      if (e === void 0) return new _E();
+      if (e instanceof _E) return e;
+      if (isString(e)) e = document.getElementById(e);
+      if (!e)
+        return e;
 
-  var w = weak_refs.get(e);
-  if (w) return t.deref();	// t is WeakRef
+      var w = weak_refs.get(e);
+      if (w) { w = w.deref(); if (w) return w }	// w is WeakRef
 
-//  D('E',e);
-  w	= new _E(e);
-  E_.set(e, new WeakRef(w));	// both sides are weak!
-  return w;
-}
+//    D('E',e);
+      w	= new _E(e);
+      weak_refs.set(e, new WeakRef(w));	// both sides are weak!
+      return w;
+    }
 })();
 
 // ON-Event class (in the capture phase by default)
