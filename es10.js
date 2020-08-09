@@ -265,7 +265,7 @@ class _E
 // pushdata = await q.Pop(popdata)	=> waits until data was pushed, sends popdata to sender
 class Q
   {
-  constructor() { this._i = []; this._o = []; this._single = Single(_ => this._Step()) }
+  constructor() { this._i = []; this._o = []; this._single = single_run(_ => this._Step()) }
 
   Push(...d)	{ return this.Proc(this._i, d) }
   Pop(...d)	{ return this.Proc(this._o, d) }
@@ -289,7 +289,7 @@ class Q
     }
   _step(x)
     {
-      this.single()
+      this._single()
       return this;
     }
   };
