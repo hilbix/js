@@ -63,6 +63,23 @@ class Cancelled
   get cancelled() { return self._a }
   };
 
+// Temporarily cache something expensive (expires at the next loop)
+function tmpcache(fn, ...a)
+{
+  var ret;
+  return function ()
+    {
+      if (ret && this in ret) return ret[this];
+      if (!ret)
+        {
+          ret	= new WeakMap();
+          setTimeout(_ => ret = void 0)
+        }
+      ret[this]	= void 0;	// avoid recursion
+      return ret[this] = fn.apply(this, a);
+    }
+}
+
 // r = single_run(fn, a);
 // r(b).then(retval => {}, err => { if (err.cancelled) was_cancelled(err); else other_error(err); })
 // - for now single_run() returns just a function to call and not a class
@@ -197,6 +214,23 @@ class _E
   get $()		{ return this._e; }
   get $$()		{ return E(this._e.parentNode); }
   E(e)			{ return this.e(e).$ }
+
+  get x()		{ return this._pos().x }
+  get y()		{ return this._pos().y }
+  get w()		{ return this.$.offsetWidth }
+  get h()		{ return this.$.offsetHeight }
+  _pos = tmpcache(function ()
+    {
+      var o = this.$;
+      var x = o.offsetLeft;
+      var y = o.offsetTop;
+      while (o = o.offsetParent)
+        {
+          x	+= o.offsetLeft;
+          y	+= o.offsetTop;
+        }
+      return { x:x, y:y }
+    })
 
 // setting is NOT supported
 //set $(e)		{ this._e = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
