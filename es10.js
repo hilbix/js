@@ -15,7 +15,7 @@ var DEBUGGING = 'debug' in document.currentScript.dataset;	// you can change thi
 
 const _FPA = Function.prototype.apply;
 const _FPC = Function.prototype.call;
-const DONOTHING = function(){}					// The "do nothing" function
+const DONOTHING = function(){}					// The "do nothing" DUMMY function
 
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
@@ -328,6 +328,11 @@ class Q
     }
   };
 
+
+//
+// Helpers: The name says it all
+//
+
 function arrayCmpShallow(a,b)
 {
   if (!a || !b || a.length != b.length)
@@ -340,6 +345,10 @@ function arrayCmpShallow(a,b)
   return true;
 }
 
+//
+// Usable Crypto wrappers to the WTF implemented in Browsers
+//
+
 // WTF https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
 async function SHA256hex(message)
 {
@@ -349,4 +358,164 @@ async function SHA256hex(message)
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
 }
+
+// fn HANDLING DIFFERS compared to class ON!
+//
+// onoff = new OnOff();
+// a = onoff.ON(fn, args..)	// register callback
+// a = onoff.ON(fn, args..)
+// onoff.OFF(a)			// unregister callback
+// onoff.trigger(triggerargs..)	// calls all the active fn(...args, ...triggerargs)
+//
+// If fn() returns truish, it will be removed (like a call to .off())
+class OnOff
+  {
+  constructor() { this._fns = {} }
+  on(...a) { this.ON(...a); return this }
+  off(...a) { this.OFF(...a); return this }
+  ON(fn,...a) { const i = Object(); this._fns[i]=[fn,a]; return i }
+  OFF(...a) { for (var b of a) delete this._fns[b] }
+  trigger(...a)
+    {
+      for (const [k,v] of Object.entries(this._fns))
+        if (v[0].call(...v[1], ...a))
+          delete this._fns[k];
+      return this;
+    }
+  }
+
+//
+// easy global state keeping
+//
+// st	= UrlState('id');	// location.hash keeps #id:val# where val is JSON
+// console.log(st.state)	// get current value
+// st.state = value		// change current value
+// console.log(st.perm)		// retain current value (for URL back)
+// st.perm = value		// retain current value and change it
+//
+// Triggers .on() if state changes (but not on something like: st.state = st.state)
+class Keep extends OnOff
+  {
+  constructor(keeper, id)
+    {
+      super();
+      this.id	= id;
+    }
+  get state()
+    {
+      return this.keeper.get(this.id);
+    }
+  set state(v)
+    {
+      if (this.keeper.set(this.id, v))
+        this.trigger(v, this.id, this)
+    }
+  get perm()
+    {
+      this.keeper.perm(this.id);
+      return this.keeper.get(this.id);
+    }
+  set perm(v)
+    {
+      this.keeper.perm(this.id);
+      this.state = v;
+    }
+  }
+
+// keeper = new Keeper()
+// state1 = new Keep(keeper, 'one')
+// state2 = new Keep(keeper, 'two')
+// state1.state = 'somestate';
+// state2.state = 'otherstate';
+//
+// To make it permanent:
+//
+// keeper = new Keeper({}, (k,v) => if (k !== void 0) change(k,v) else perm(v))
+// where:
+// change(k,v) means key=k changed to value=v (v===void 0 if removed)
+// perm(k) means key=k should be made permanent
+// (If you do not need perm(), just ignore k===void 0 on change)
+class Keeper
+  {
+  constructor(state, change, ...args)
+    {
+      this._change	= change || DONOTHING;
+      this._args	= args;
+      this._state	= state || {};
+    }
+  perm(s)  { this.change(...args, void 0, s) }
+  get(s)   { return this._state[s] }
+  set(s,v)
+    {
+      if (s === void 0)	throw new Error('Keeper.set(undefined)');
+      if (v === void 0)
+        if (s in this._state)
+          delete this._state[s];
+        else
+          return;	// no change
+      else
+        if (this._state[s] == v)
+          return;	// no change
+        else
+          this._state[s]	= v;
+      // propagate the change to the change function
+      this.change(...args, s, v);
+      return true;
+    }
+  }
+
+const UrlState = (function(x){x()}(function(){
+  const reg = new WeakMap();
+  const state = {};
+  var perm = {};
+  var save = 1;
+
+  function init()
+    {
+      var a	= location.hash.split('#');
+      a.pop();		// remove last element
+      a.shift();	// remove first empty element
+      for (var b of a)
+        {
+          const i = b.indexOf(':');
+          if (i<0) continue;		// ignore crap
+          const k	= b.substring(0,i);
+          try {
+            const v	= JSON.parse(b.substring(i+1));
+          } catch {
+            continue			// ignore crap
+          }
+          state[k]= v;
+        }
+    }
+  function change(id,v)
+    {
+      if (id === void 0)
+        {
+          if (perm[v] !== state[v])
+            save	= 1;
+          return;
+        }
+      const dat = [ location.href.split('#',1).shift() ];
+      dat.append('')
+      const url = dat.join('#')
+      if (save)
+        {
+          location.assign(url);
+          save	= 0;
+          perm	= {};
+          for (var a in state)
+            perm[a]	= state[a];
+        }
+      else
+        location.replace(url);
+    }
+  const keeper = new Keeper(init(), change);
+  return id => reg[id] || (reg[id] = new Keep(keeper, id));
+}));
+
+
+//
+// NOT IMPLEMENTED YET below
+//
 
