@@ -57,6 +57,15 @@ const Text	= p => p.then(r => r.status==200 ? r.text() : raise(r.status))
 const GetText	= u => Text(Get(u))
 const GetJSON	= u => Json(Get(u))
 
+// Escape URI and (only the problematic) HTML entities
+// As there are gazillions of named HTML entities (and counting)
+// we do NOT want to support them.  Never.  Sorry.
+function UE(x) { return encodeURIComponent(x) }	// WTF? I almost broke a finger typing this!
+function UD(x) { return decodeURIComponent(x) }	// WTF? BTW: Out of 666 characters long names?
+function HE(x) { return String(x).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`) }
+function HD(x) { return String(x).replace(/&#(\d)+;/g, (s,c) => String.fromCharChode(c)) }
+function HU(x) { return HE(UE(x)) }	// special short form
+
 class Cancelled
   {
   constructor(...a) { self._a = a; }
@@ -399,25 +408,26 @@ class Keep extends OnOff
   constructor(keeper, id)
     {
       super();
-      this.id	= id;
+      this._k	= keeper;
+      this._id	= id;
     }
   get state()
     {
-      return this.keeper.get(this.id);
+      return this._k.get(this._id);
     }
   set state(v)
     {
-      if (this.keeper.set(this.id, v))
-        this.trigger(v, this.id, this)
+      if (this._k.set(this._id, v))
+        this.trigger(v, this._id, this)
     }
   get perm()
     {
-      this.keeper.perm(this.id);
-      return this.keeper.get(this.id);
+      this._k.perm(this._id);
+      return this._k.get(this._id);
     }
   set perm(v)
     {
-      this.keeper.perm(this.id);
+      this._k.perm(this._id);
       this.state = v;
     }
   }
@@ -445,6 +455,7 @@ class Keeper
     }
   perm(s)  { this.change(...args, void 0, s) }
   get(s)   { return this._state[s] }
+  states() { return Object.keys(this._state) }
   set(s,v)
     {
       if (s === void 0)	throw new Error('Keeper.set(undefined)');
@@ -459,60 +470,78 @@ class Keeper
         else
           this._state[s]	= v;
       // propagate the change to the change function
-      this.change(...args, s, v);
+      this._change(...this._args, s, v);
       return true;
     }
   }
 
-const UrlState = (function(x){x()}(function(){
+const UrlState = (x => x())(function(){
   const reg = new WeakMap();
-  const state = {};
   var perm = {};
   var save = 1;
 
   function init()
     {
       var a	= location.hash.split('#');
+      var ret	= {}
+
       a.pop();		// remove last element
       a.shift();	// remove first empty element
       for (var b of a)
         {
-          const i = b.indexOf(':');
+          const s = UD(b);
+          const i = s.indexOf(':');
           if (i<0) continue;		// ignore crap
-          const k	= b.substring(0,i);
+          const k	= s.substring(0,i);
+          var v	= s.substring(i+1);
           try {
-            const v	= JSON.parse(b.substring(i+1));
-          } catch {
+            v	= JSON.parse(v);
+          } catch (e) {
+            D('UrlState err', k, v, e)
             continue			// ignore crap
           }
-          state[k]= v;
+          ret[k]= v;
+          D('UrlState has', k, v)
         }
+      return ret
     }
   function change(id,v)
     {
       if (id === void 0)
         {
-          if (perm[v] !== state[v])
+          if (perm[v] !== keeper.get[v])
             save	= 1;
           return;
         }
+
       const dat = [ location.href.split('#',1).shift() ];
-      dat.append('')
+
+      for (const a of keeper.states())
+        dat.push(UE(a+':'+JSON.stringify(keeper.get(a))));
+      dat.push('')
+
       const url = dat.join('#')
+
       if (save)
         {
+          D('UrlState new', id, v, url)
+
           location.assign(url);
           save	= 0;
           perm	= {};
-          for (var a in state)
-            perm[a]	= state[a];
+          for (const a of keeper.states())
+            perm[a]	= keeper.get(a);
         }
       else
-        location.replace(url);
+        {
+          D('UrlState tmp', id, v, url)
+          location.replace(url);
+        }
     }
+
   const keeper = new Keeper(init(), change);
   return id => reg[id] || (reg[id] = new Keep(keeper, id));
-}));
+});
 
 
 //
