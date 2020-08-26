@@ -94,7 +94,7 @@ function tmpcache(fn, ...a)
 // - for now single_run() returns just a function to call and not a class
 // - r(b) asynchronosuly runs fn(a,b) if fn() not already runs
 // - if fn(a,b) still runs, r(x) will invoke fn(a,x) as soon, as fn(a,b) finishes
-// - Only remembers the very last call to r(x) is remembered, all intermediate other calls are Cancelled()!
+// - Only the very last call to r(x) is remembered, all intermediate other calls are Cancelled()!
 // - r() returns a Promise which resolves to the result (or rejected if Cancelled()/errors)
 //   You can check if (e.chancelled) // function was cancelled
 const single_run = (fn, ...a) =>
@@ -274,7 +274,7 @@ class _E
   get TEXTAREA()	{ return this._MK('textarea') }
   get TABLE()		{ return this._MK('table') }
   get BUTTON()		{ return this._MK('button') }
-  get SELECT()		{ return this._MK('select') }
+  get SELECT)		{ return this._MK('select') }
   get OPTION()		{ return this._MK('option') }
 
   get selectedOptions()	{ return (function *() { for (var a of this.$.selectedOptions) yield E(a) }).call(this) }
@@ -315,7 +315,7 @@ class Q
   Proc(a,d)
     {
       const p = d.map(m => new Promise((ok,ko) => a.push([m, ok, ko])));
-      this._single();
+      this._single().catch(DONOTHING);
       return p.length==1 ? p[0] : Promise.all(p);
     }
   Clear()
@@ -340,7 +340,7 @@ class Q
     }
   _step(x)
     {
-      this._single()
+      this._single().catch(DONOTHING);
       return this;
     }
   };
