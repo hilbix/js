@@ -315,16 +315,17 @@ class Q
   Proc(a,d)
     {
       const p = d.map(m => new Promise((ok,ko) => a.push([m, ok, ko])))
-      this._step();
+      this._Step();
       return p.length==1 ? p[0] : Promise.all(p)
     }
   async _Step()
     {
-      while (this._i && this._o)
+      while (this._i.length && this._o.length)
         {
           const i = this._i.shift();
           const o = this._o.shift();
 
+          console.log('Q', i,o)
           await void 0;	// synchronous up to here, async from here
           o[1](i[0]);
           i[1](o[0]);
