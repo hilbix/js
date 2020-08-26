@@ -310,14 +310,20 @@ class Q
   {
   constructor() { this._i = []; this._o = []; this._single = single_run(_ => this._Step()) }
 
-  clear()	{ this._i = []; return this }
   Push(...d)	{ return this.Proc(this._i, d) }
   Pop(...d)	{ return this.Proc(this._o, d) }
   Proc(a,d)
     {
-      const p = d.map(m => new Promise((ok,ko) => a.push([m, ok, ko])))
-      this._Step();
-      return p.length==1 ? p[0] : Promise.all(p)
+      const p = d.map(m => new Promise((ok,ko) => a.push([m, ok, ko])));
+      this._single();
+      return p.length==1 ? p[0] : Promise.all(p);
+    }
+  Clear()
+    {
+      var i = this._i;
+
+      this._i = [];
+      return Promise.all(i.map(m => P(m[2], 'cleared')));
     }
   async _Step()
     {
@@ -326,7 +332,7 @@ class Q
           const i = this._i.shift();
           const o = this._o.shift();
 
-          console.log('Q', i,o)
+          console.log('Q', i,o);
           await void 0;	// synchronous up to here, async from here
           o[1](i[0]);
           i[1](o[0]);
