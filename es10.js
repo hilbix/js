@@ -339,7 +339,7 @@ class Q
           const i = this._i.shift();
           const o = this._o.shift();
 
-          console.log('Q', i,o);
+          //D('Q', i,o);
           await void 0;	// synchronous up to here, async from here
           P(o[1], i[0]);
           P(i[1], o[0]);
