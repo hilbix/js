@@ -310,6 +310,7 @@ class Q
   {
   constructor() { this._i = []; this._o = []; this._single = single_run(_ => this._Step()) }
 
+  clear()	{ this._i = []; return this }
   Push(...d)	{ return this.Proc(this._i, d) }
   Pop(...d)	{ return this.Proc(this._o, d) }
   Proc(a,d)
