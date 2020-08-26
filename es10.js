@@ -289,12 +289,13 @@ class _E
   ON(type, fn, ...a)	{ return new ON(type).add(fn, this, ...a).attach(this) }
   on(...a)		{ this.ON(...a); return this }
 
-  rm()			{ this.remove(); return this }
+  rm()			{ this.$.remove(); return this }
 
   target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
   href(link)		{ return this.attr({href:link}) }
   attr(a)		{ if (a) for (var b in a) this.$.setAttribute(b, a[b]); return this }
   style(a)		{ if (a) for (var b in a) this.$.style[b]=a[b]; return this }
+  prepend(...c)		{ if (this.$) for (var a of c) this.$.prepend(E(a).$); return this }
   add(...c)		{ if (this.$) for (var a of c) this.$.appendChild(E(a).$); return this }
   attach(p)		{ E(p).add(this); return this }
 
