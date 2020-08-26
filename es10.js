@@ -334,8 +334,8 @@ class Q
 
           console.log('Q', i,o);
           await void 0;	// synchronous up to here, async from here
-          o[1](i[0]);
-          i[1](o[0]);
+          P(o[1], i[0]);
+          P(i[1], o[0]);
         }
     }
   _step(x)
