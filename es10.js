@@ -274,7 +274,7 @@ class _E
   get TEXTAREA()	{ return this._MK('textarea') }
   get TABLE()		{ return this._MK('table') }
   get BUTTON()		{ return this._MK('button') }
-  get SELECT)		{ return this._MK('select') }
+  get SELECT()		{ return this._MK('select') }
   get OPTION()		{ return this._MK('option') }
 
   get selectedOptions()	{ return (function *() { for (var a of this.$.selectedOptions) yield E(a) }).call(this) }
