@@ -103,18 +103,22 @@ const single_run = (fn, ...a) =>
 
     async function run(...a)
       {
+        //D('SR', 'wait', a);
         await void 0;		// run asynchrounously
+        //D('SR', 'run', a);
         return fn(...a);	// in case it is a Promise
       };
     async function loop()
       {
         running = invoke;
         invoke = void 0;
-        if (!running)
+        //D('SR', 'loop', running)
+        if (running)
           await run(...running[0], ...running[1]).then(running[2], running[3]).finally(loop)
       }
     return (...b) => new Promise((ok, ko) =>
       {
+        //D('SR', 'exec', fn, a, invoke);
         if (invoke)
           invoke[3](new Cancelled(a,b));
         invoke = [a,b,ok,ko];
@@ -316,6 +320,7 @@ class Q
     {
       const p = d.map(m => new Promise((ok,ko) => a.push([m, ok, ko])));
       this._single().catch(DONOTHING);
+      //D('Q.Proc', a, d, p);
       return p.length==1 ? p[0] : Promise.all(p);
     }
   Clear()
@@ -323,10 +328,12 @@ class Q
       var i = this._i;
 
       this._i = [];
+      //D('Q.Clear');
       return Promise.all(i.map(m => P(m[2], 'cleared')));
     }
   async _Step()
     {
+      //D('Q._Step');
       while (this._i.length && this._o.length)
         {
           const i = this._i.shift();
@@ -340,6 +347,7 @@ class Q
     }
   _step(x)
     {
+      //D('Q._step');
       this._single().catch(DONOTHING);
       return this;
     }
