@@ -41,6 +41,11 @@ function OKO(...a) { return [ v => OK(v, ...a), e => KO(e, ...a) ] }
 const P = (fn,...a) => Promise.resolve().then(_ => fn(...a));
 const PC = (fn,self,...a) => Promise.resolve().then(_ => _FPA.call(fn, self, a));
 
+const fromJ	= o => JSON.parse(o);
+const toJ	= o => JSON.stringify(o);
+const Sleep	= ms => r => new Promise(ok => setTimeout(ok, ms, r))
+const Sleeperr	= ms => r => new Promise((ok,ko) => setTimeout(ko, ms, r))
+
 const raise	= e => { throw e }
 
 // fetch() promises
