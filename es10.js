@@ -49,8 +49,9 @@ const Sleeperr	= ms => r => new Promise((ok,ko) => setTimeout(ko, ms, r))
 const raise	= e => { throw e }
 
 // fetch() promises
-const Get	= u => fetch(u, { cache:'no-cache' })
-const _MTFUD	= (m,t,f) => (u,d) => fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':t}, body:f ? f(d) : d })
+const Fetch	= (u, o) => fetch(u,o).then(r => r.ok ? r : Promise.reject(`${r.status}: ${r.url}`))
+const Get	= u => Fetch(u, { cache:'no-cache' })
+const _MTFUD	= (m,t,f) => (u,d) => Fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':t}, body:f ? f(d) : d })
 const PostText	= _MTFUD('POST', 'text/plain')
 const PutText	= _MTFUD('PUT', 'text/plain')
 const _MUJ	= m => _MTFUD(m, 'application/json', JSON.stringify)
