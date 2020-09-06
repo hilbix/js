@@ -324,7 +324,7 @@ class _E
     {
       var ret = [];
       for (const e of defArr(this._E, document))
-        ret = ret.extend(e.querySelectorAll(sel));
+        e.querySelectorAll(sel).forEach(_ => ret.push(_));
       return E(ret);
     }
   }
