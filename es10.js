@@ -312,7 +312,7 @@ class _E
   Run(fn, ...a)		{ return PC(fn, this, ...a) }
   run(...a)		{ this.Run(...a); return this }
 
-  Loaded()		{ return Promise.all(this.MAP(_ => _.decode()) }
+  Loaded()		{ return Promise.all(this.MAP(_ => _.decode())) }
 
   *[Symbol.iterator]()	{ for (const e of this._E) yield e }
   MAP(fn, ...a)		{ const r=[]; for (const e of this._E) r.push(fn(e, ...a)); return r }
