@@ -31,6 +31,8 @@ const DomReady	= new Promise(ok => document.addEventListener('DOMContentLoaded',
 //Get()	fetch via 'GET'
 const isString	= s => typeof s=='string' || s instanceof String;
 //KO()
+const mkArr = x => Array.isArray(x) ? x : [x];
+const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }
 
 // Promise.resolve(1).then(OK).catch(KO).then(...OKO('mypromise'))
 function KO(e, ...a) { D('catch', v, ...a); throw e }
@@ -201,14 +203,14 @@ class ON
       return true;
     }
 
-  attach(...e)
+  attach(...a)
     {
-      for (var o of e)
-        {
-          var t = E(o).$;
-          t.addEventListener(this._type, this, true);
-          this._el.push(new WeakRef(t));
-        }
+      for (const o of a)
+        for (const e of o)
+          {
+            e.addEventListener(this._type, this, true);
+            this._el.push(new WeakRef(e));
+          }
       return this;
     }
 
@@ -229,10 +231,9 @@ class ON
 // var input = E().DIV.text('hello world ').INPUT;
 class _E
   {
-  constructor(e)	{ this._e = e }
+  constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0] }
   get $()		{ return this._e; }
   get $$()		{ return E(this._e.parentNode); }
-  E(e)			{ return this.e(e).$ }
 
   get x()		{ return this._pos().x }
   get y()		{ return this._pos().y }
@@ -240,7 +241,7 @@ class _E
   get h()		{ return this.$.offsetHeight }
   _pos = tmpcache(function ()
     {
-      var o = this.$;
+      var o = this._e;
       var x = o.offsetLeft;
       var y = o.offsetTop;
       while (o = o.offsetParent)
@@ -251,9 +252,10 @@ class _E
       return { x:x, y:y }
     })
 
-// setting is NOT supported
-//set $(e)		{ this._e = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
-//e(e)			{ if (e) this.$ = e; return this }
+// setting is NOT supported due to caching
+//  E(e)			{ return this.e(e).$ }
+//  set $(e)		{ this._e = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
+//  e(e)			{ if (e) this.$ = e; return this }
 
   get $text()		{ return this.$.innerText }
   set $text(s)		{ return this.$.innerText = s }
@@ -266,11 +268,11 @@ class _E
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
-  TEXT(s)		{ return this._ADD(document.createTextNode(s)) }
-  text(s)		{ this.TEXT(s); return this }
-  value(s)		{ this.$value = s; return this }
+  TEXT(...s)		{ return this._ADD(document.createTextNode(s.join(' '))) }
+  text(...s)		{ this.TEXT(...s); return this }
+  value(...s)		{ this.$value = s.join(' '); return this }
   src(s)		{ this.$src = s; return this }
-  alt(s)		{ this.$alt = s; return this }
+  alt(...s)		{ this.$alt = s.join(' '); return this }
   get DIV()		{ return this._MK('div') }
   get A()		{ return this._MK('a') }
   get IMG()		{ return this._MK('img') }
@@ -295,22 +297,33 @@ class _E
   ON(type, fn, ...a)	{ return new ON(type).add(fn, this, ...a).attach(this) }
   on(...a)		{ this.ON(...a); return this }
 
-  rm()			{ this.$.remove(); return this }
+  rm()			{ for (const e of this._E) e.remove(); return this }
 
   target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
   href(link)		{ return this.attr({href:link}) }
-  attr(a)		{ if (a) for (var b in a) this.$.setAttribute(b, a[b]); return this }
-  style(a)		{ if (a) for (var b in a) this.$.style[b]=a[b]; return this }
-  prepend(...c)		{ if (this.$) for (var a of c) this.$.prepend(E(a).$); return this }
-  add(...c)		{ if (this.$) for (var a of c) this.$.appendChild(E(a).$); return this }
+  attr(a)		{ if (a) for (const b in a) for (const e of this._E) e.setAttribute(b, a[b]); return this }
+  style(a)		{ if (a) for (const b in a) for (const e of this._E) e.style[b] = a[b]; return this }
+  prepend(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.prepend(b); return this }
+  add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.appendChild(b); return this }
   attach(p)		{ E(p).add(this); return this }
 
-  clr()			{ const e=this.$; var a; while (a = e.firstChild) a.remove(); return this; }
+  clr()			{ var a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this; }
 
-  Run(fn, ...a)		{ return PC(fn, this, a) }
+  Run(fn, ...a)		{ return PC(fn, this, ...a) }
   run(...a)		{ this.Run(...a); return this }
 
-  Loaded()		{ return this.$.decode() }
+  Loaded()		{ return Promise.all(this.MAP(_ => _.decode()) }
+
+  *[Symbol.iterator]()	{ for (const e of this._E) yield e }
+  MAP(fn, ...a)		{ const r=[]; for (const e of this._E) r.push(fn(e, ...a)); return r }
+
+  ALL(sel)
+    {
+      var ret = [];
+      for (const e of defArr(this._E, document))
+        ret = ret.extend(e.querySelectorAll(sel));
+      return E(ret);
+    }
   }
 
 // asynchronous Bidirectional communication queue
