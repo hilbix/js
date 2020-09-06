@@ -265,6 +265,8 @@ class _E
   set $src(u)		{ this.$.src = u }
   get $alt()		{ return this.$.alt }
   set $alt(u)		{ this.$.alt = u }
+  get $checked()	{ return this.$.checked }
+  set $checked(b)	{ this.$.checked = !!b }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
@@ -273,6 +275,7 @@ class _E
   value(...s)		{ this.$value = s.join(' '); return this }
   src(s)		{ this.$src = s; return this }
   alt(...s)		{ this.$alt = s.join(' '); return this }
+  checked(b)		{ this.$checked = b; return this }
   get DIV()		{ return this._MK('div') }
   get A()		{ return this._MK('a') }
   get IMG()		{ return this._MK('img') }
