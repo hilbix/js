@@ -29,7 +29,10 @@ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'
 const DomReady	= new Promise(ok => document.addEventListener('DOMContentLoaded', ok));
 //E()
 //Get()	fetch via 'GET'
-const isString	= s => typeof s=='string' || s instanceof String;
+const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
+const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
+const isArray	= a => Array.isArray(a);
+const isInt	= i => Number.isInteger(i);
 //KO()
 const mkArr = x => Array.isArray(x) ? x : [x];
 const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }
