@@ -585,6 +585,135 @@ const UrlState = (x => x())(function(){
   return id => reg[id] || (reg[id] = new Keep(keeper, id));
 });
 
+// Why no .POP()/.SHIFT()/.HEAD()/.TAIL()/.FIRST()/.LAST()?  Because this would be very confusing:
+// Array.pop() removes the tail (most recent or last added element by Array.push())
+// Array.shift() removes the head (least recent added or first element or Array.unshift())
+// However in LRU head/tail/first/last are reversed, the most recent used/last added element is at LRU's head.
+// Hence should .pop() remove the tail (as in Array) or the most recent added element (as in Array)?
+// To avoid all this confusion, the interface does not use confusing names.
+// (As usual: lowercase() returns this, Caps() returns Promise, ALLCAPS something else and _ are private)
+class LRU		// Clean LRU key/value cache implementation
+  {
+    // DO NOT USE MEMBERS WHICH START WITH _ OUTSIDE OF THIS CLASS!
+
+    constructor(max)
+      {
+        this.$max = max;
+        this.clr();
+      }
+
+    //
+    // return v:
+    //
+
+    get length(){ return this._size }				// compare Array.length
+    get $len()	{ return this._size }
+    get $max()	{ return this._max }
+    set $max(m)	{ this._max = isInt(m) && m>0 ? m : 10 }	// this does no cleanup by purpose
+
+    GET(k, def)	{ let e = this._get_(k); return e ? e.v : def }	// get key value (or default)
+    DEL(k,d)	{ return this._get_(k) ? this.POPM().v : d }	// remove key (if exist) and return v (or default)
+
+    //
+    // return [k,v] (or void 0):
+    //
+
+    MOST(k,d)	{ return this._kv_(this._head, d) }		// most: most recent used element (or default void 0)
+    LEAST(k,d)	{ return this._kv_(this._tail, d) }		// least: least recent used element
+    POPM(d)	{ return this._kv_(this._free_(this._head), d) } // pop most recent (or default void 0)
+    POPL(d)	{ return this._kv_(this._free_(this._tail), d) } // pop least recent (or default void 0)
+
+    _kv_(e,def)	{ return e ? [e.k,e.v] : def }
+
+    //
+    // return this:
+    //
+
+    max(m)	{ this.$max = m; return this }			// set the max size.  This does no cleanup by purpose
+    gc()	{ while (this._size > this._max) this._free_(this._tail) }
+
+    del(k)	{ this.DEL(k); return this }			// remove element and return this
+    delm()	{ this.POPM(); return this }			// remove most recent used
+    dell()	{ this.POPL(); return this }			// remove least recent used
+
+    clr()							// clear (empty) LRU
+      {
+        this._lru	= {};
+        this._head	= void 0;
+        this._tail	= void 0;
+        this._size	= 0;
+        return this;
+      }
+    set(k,v)							// add key with value to LRU
+      {
+        let e = this._get_(k);
+        if (e)
+          {
+            e.v	= v;
+            return this;
+          }
+
+        e = {k, v, n:this._head, p:void 0};
+        this._new_(e)
+        if (++this._size > this._max)
+          this._free_(this._tail);
+        return this;
+      }
+
+    //
+    // return e (or void 0):
+    //
+
+    _new_(e)							// add new element
+      {
+        if (!e) return void 0;
+        this._lru[e.k]	= e;
+        this._size++;
+        D('LRU-new', this._size, e)
+        return this._put_(e);
+      }
+    _free_(e)							// delete element (opposite of _new)
+      {
+        if (!e) return void 0;
+        this._size--;
+        delete this._lru[e.k];
+        D('LRU-free', this._size, e)
+        return this._rm_(e);
+      }
+    _get_(k)							// get element from key
+      {
+        let e = this._lru[k];
+        return e ? this._head === e ? e : this._put_(this._rm_(e)) : void 0;
+      }
+    _rm_(e)							// remove element from it's position
+      {
+        if (!e) return void 0;
+        if (e.p)
+          e.p.n	= e.n;
+        else if (this._head === e)
+          this._head = e.n;
+        else
+          throw 'LRU head error';
+        if (e.n)
+          e.n.p	= e.p;
+        else if (this._tail === e)
+          this._tail = e.p;
+        else
+          throw 'LRU tail error';
+        return e;
+      }
+    _put_(e)							// put element into top position (LRU)
+      {
+        if (!e) return void 0;
+        e.p	= void 0;
+        e.n	= this._head;
+        if (e.n)
+          e.n.p	= e;
+        this._head = e;
+        return e;
+      }
+  };
+
 
 //
 // NOT IMPLEMENTED YET below
