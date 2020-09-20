@@ -7,8 +7,8 @@
 // Uppercase or CamelCase which starts uppercase return "async function" or "Promise".
 // All lowercase returns "this".  Always.
 // Starting with $ are getter/setter with just $ is what you expect most (the wrapped object, etc.)
-// mixedCaps or functions with _ in the name return anything.
-// Starting with _ is private, the _ is skipped for the rules above.
+// mixedCaps or ALLCAPS or functions with _ in the name or ending on it return anything.
+// Starting with _ is private, the first _ is skipped to apply the rules above.
 
 // <script src="*.js" data-debug></script>
 var DEBUGGING = 'debug' in document.currentScript.dataset;	// you can change this later
