@@ -655,7 +655,7 @@ class LRU		// Clean LRU key/value cache implementation
 
         e = {k, v, n:this._head, p:void 0};
         this._new_(e)
-        if (++this._size > this._max)
+        if (this._size > this._max)
           this._free_(this._tail);
         return this;
       }
@@ -669,7 +669,7 @@ class LRU		// Clean LRU key/value cache implementation
         if (!e) return void 0;
         this._lru[e.k]	= e;
         this._size++;
-        D('LRU-new', this._size, e)
+        D('LRU-new', this._size, this._max, e)
         return this._put_(e);
       }
     _free_(e)							// delete element (opposite of _new)
@@ -677,7 +677,7 @@ class LRU		// Clean LRU key/value cache implementation
         if (!e) return void 0;
         this._size--;
         delete this._lru[e.k];
-        D('LRU-free', this._size, e)
+        D('LRU-free', this._size, this._max, e)
         return this._rm_(e);
       }
     _get_(k)							// get element from key
@@ -710,6 +710,8 @@ class LRU		// Clean LRU key/value cache implementation
         if (e.n)
           e.n.p	= e;
         this._head = e;
+        if (!this._tail)
+          this._tail = e;
         return e;
       }
   };
