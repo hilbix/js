@@ -405,16 +405,17 @@ async function SHA256hex(message)
 {
   return await SHA256u8hex(new TextEncoder().encode(message));
 }
-
+// u8 can be Uint8Array or ArrayBuffer/ArrayBufferView
+// https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array
 async function SHA256u8hex(u8)
 {
   return Array
-    .from(new Uint8Array(await crypto.subtle.digest('SHA-256', u8)))
-    .map(b => b.toString(16).padStart(2, '0'))
+    .from(new Uint8Array(await crypto.subtle.digest('SHA-256', u8)), b => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
-// fn HANDLING DIFFERS compared to class ON!
+// fn HANDLING DIFFERS from class ON!
 //
 // onoff = new OnOff();
 // a = onoff.ON(fn, args..)	// register callback
