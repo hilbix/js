@@ -1,6 +1,6 @@
-'use strict';	// this is for ES10 aka ES2019
+'use strict';	// this is for ES11 aka ES2020
 
-// <script src="es10.js" data-debug></script>
+// <script src="es11.js" data-debug></script>
 // data-debug enables debugging
 
 // Rules for members in classes (NOT on toplevel functions):
@@ -28,6 +28,7 @@ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'
 //DONOTHING
 const DomReady	= new Promise(ok => document.addEventListener('DOMContentLoaded', ok));
 //E()
+const THROW = e => { console.log('ERROR', e); throw (e instanceof Event ? e : new Error(e)) }
 //Get()	fetch via 'GET'
 const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
 const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
@@ -414,6 +415,9 @@ async function SHA256u8hex(u8)
     .from(new Uint8Array(await crypto.subtle.digest('SHA-256', u8)), b => b.toString(16).padStart(2, '0'))
     .join('');
 }
+SHA256hex('hw')
+.then(_ => '91660cd41bd4fe159351ab036b7ca3e998602a9fec70b362ca11e0177fe706e3' == _)
+.then(_ => _ ? _ : THROW('SHA256 error'))
 
 // fn HANDLING DIFFERS from class ON!
 //
@@ -505,7 +509,7 @@ class Keeper
   states() { return Object.keys(this._state) }
   set(s,v)
     {
-      if (s === void 0)	throw new Error('Keeper.set(undefined)');
+      if (s === void 0)	THROW('Keeper.set(undefined)');
       if (v === void 0)
         if (s in this._state)
           delete this._state[s];
@@ -725,4 +729,108 @@ class LRU		// Clean LRU key/value cache implementation
 //
 // NOT IMPLEMENTED YET below
 //
+
+// Easy state synchronization, register, wait for and trigger states
+//
+// States are None (nothing in this state), Some (neither non nor All in state), All (all in state)
+// The Promise is fullfilled if the state is reached
+//
+// somestate = State()
+// somestate.None('idle').then(trigger)		// triggers once on: None
+// somestate.Some('idle').then(trigger)		// triggers once on: Some
+// somestate.All('idle').then(trigger)		// triggers once on: All
+// somestate.Any('idle').then(trigger)		// triggers once on: Some|All
+// somestate.Free('idle').then(trigger)		// triggers once on: None|Some
+// r = somestate.On('idle', cb, args)		// when something enters/leaves 'idle'
+// somestate.Off(r)				// stop 'on' again
+//
+// fn = somestate.ADD()
+// fn('idle')		// triggers triggered
+// fn(somestate.DEL)	// removes the state again
+//
+class State
+  {
+    DEL	= Symbol()
+    NEW	= Symbol()
+
+    constructor()
+      {
+        this._states	= {};
+        this._state	= {};
+        this._args	= {};
+        this._fn	= {};
+        this._cnt	= 0;
+        this._nr	= 0;
+      }
+
+    _del(name, state)
+      {
+        if (!(name in this._state)) THROW(`State._del(${name}) of unknown`);
+        this._state[name]	= 0;
+      }
+
+    _add(name, state, a)
+      {
+        this._args[name]	= a;
+        this._state[name]	= state;
+        var n			= 1+(this._states[state] || 0);
+        this._states[state]	= n;
+
+        this._trigger('any', state, name);
+        if (n==this._cnt)
+          this.trigger('all', state, name);
+      }
+    _trigger(tag, state, name)
+      {
+        var s = this[`_${tag}`];
+        if (!s) return;
+        var t = t[state];
+        delete t[state];
+        for (var f of t)
+          f({org:this, type:tag, state:state, cause:name});
+      }
+
+    _set(name, state, ...a)
+      {
+        if (!state) state = 0;
+        if (!(name in this._state)) return this.DEL;
+        const old = this._state[name];
+        this._args[name]	= a;
+        if (old === state) return old;
+
+//        this.
+
+        if (state === this.DEL)
+          {
+            this._cnt--;
+            delete this._state[name];
+            delete this._args[name];
+            //delete this._fn[name];
+          }
+        else
+          {
+          }
+      }
+
+    ADD(name, ...a)
+      {
+        this._nr++;
+        this._cnt++;
+        name	= name ? `${this.nr}: ${name}` : `${this.nr}`;
+        const self = this;
+        function change(s) { return self._set(name, s); }
+        //this._fn[name]	= change;
+        this._add(name, this.NEW, a)
+        return change
+      }
+    None(s)
+      {
+      }
+    Any(s)
+      {
+      }
+    All(s)
+      {
+      }
+  }
 
