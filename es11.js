@@ -403,11 +403,15 @@ function arrayCmpShallow(a,b)
 // WTF https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
 async function SHA256hex(message)
 {
-  const msgUint8 = new TextEncoder().encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  return await SHA256u8hex(new TextEncoder().encode(message));
+}
+
+async function SHA256u8hex(u8)
+{
+  return Array
+    .from(new Uint8Array(await crypto.subtle.digest('SHA-256', u8)))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 // fn HANDLING DIFFERS compared to class ON!
