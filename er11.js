@@ -16,7 +16,7 @@ const CATCH = fn =>
         if (v?.message) o.message = v.message;
         ['filename','lineno','colno'].filter(_ => e[_]).forEach(_ => o[_]=e[_]);
         fn(e, o);
-      } catch(e) { console.log('CATCHERR', e) } }
+      } catch(e) { console.log?.('CATCHERR', e) } }
     window.addEventListener('error',w,true);
     window.addEventListener('unhandledrejection',w);
     // do we need more?
@@ -24,12 +24,18 @@ const CATCH = fn =>
 
 // Output to console: data-debug="prefix"
 if (document.currentScript.dataset?.debug)
-  (f => f(document.currentScript.dataset.debug))(s => CATCH((e,d) => console.log(s,e,d)));
+  // Actually this is a BUG for environments lacking console.
+  // We should forward this problem to the other error handlers.
+  (f => f(document.currentScript.dataset.debug))(s => CATCH((e,d) => console.log?.(s,e,d)));
 
 // Append <PRE> to some element: data-append="element-id"
 if (document.currentScript.dataset?.append)
   (f => f(document.currentScript.dataset.append))(id =>
-    CATCH((e,d) => document.getElementById(id).append((f=>f(document.createElement('PRE')))(e =>
+    // Actually this is a BUG:
+    // If ID is not available we should throw.
+    // However this would create a loop here,
+    // so we somehow must evade this.
+    CATCH((e,d) => document.getElementById(id)?.append((f=>f(document.createElement('PRE')))(e =>
       {
         e.innerText = Object.keys(d).map(k => `${k}: ${d[k]}`).join('\n')
         return e;
@@ -45,5 +51,12 @@ if (document.currentScript.dataset?.post)
       , method:'POST'
       , headers:{'Content-Type':'application/json'}
       , body:JSON.stringify({e, t})
-      })));
+      }).then(r => { if (r.ok) return r.text();
+        throw new Error(`CATCH failed: ${r.url} failed with ${r.status}: ${r.statusText}`) })
+      .catch(console.log)
+      // Actually the .catch() before is a BUG:
+      // We shall throw errors to all other CATCH() handlers here that the POST did not work.
+      // Also we should retry after a little waiting time and give up at too many retries.
+      // This, however, needs to create some own clever Error object which is a lot of work.
+     ));
 
