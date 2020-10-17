@@ -11,11 +11,12 @@
 // Starting with _ is private, the first _ is skipped to apply the rules above.
 
 // <script src="*.js" data-debug></script>
-var DEBUGGING = 'debug' in document.currentScript.dataset;	// you can change this later
+var DEBUGGING = document.currentScript?.dataset?.debug;		// you can change this later
 
 const _FPA = Function.prototype.apply;
 const _FPC = Function.prototype.call;
 const DONOTHING = function(){}					// The "do nothing" DUMMY function
+const CONSOLE = function (...a) { console.log(...a) }		// returns void
 
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
@@ -23,7 +24,7 @@ const C = (fn,...a) => function (...b) { return fn(...a,...b) }	// Curry (allows
 const CA = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);	// Curry Apply (with self)
 const CC = (fn,self,...a) => CA(fn,self,a);			// Curry Call (with self)
 //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
-const D = (...a) => DEBUGGING ? console.log('DEBUG', ...a) : void 0;
+const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
 const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
 //DONOTHING
 const DomReady	= new Promise(ok => document.addEventListener('DOMContentLoaded', ok));
@@ -39,13 +40,16 @@ const mkArr = x => Array.isArray(x) ? x : [x];
 const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }
 
 // Promise.resolve(1).then(OK).catch(KO).then(...OKO('mypromise'))
-function KO(e, ...a) { D('catch', v, ...a); throw e }
-function OK(v, ...a) { D('then', v, ...a); return v }
-function OKO(...a) { return [ v => OK(v, ...a), e => KO(e, ...a) ] }
+function KO(e, ...a)  { D('catch', e, ...a); throw e }	// Promise.reject().catch(KO).then(not_executed)
+function OK(v, ...a)  { D('then', v, ...a); return v }
+function OKO(...a)    { return [ v => OK(v, ...a), e => KO(e, ...a) ] }
+function KOK(...a)    { return DD(...a) }			// Promise.reject().catch(KOK('shown when fail+debug')).then(executed)
+function IGN(...a)    { return (...b) => CONSOLE(...a, ...b) }	// Promise.reject().catch(IGN('always log fail')).then(executed)
 
 // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
-const P = (fn,...a) => Promise.resolve().then(_ => fn(...a));
-const PC = (fn,self,...a) => Promise.resolve().then(_ => _FPA.call(fn, self, a));
+const PR = Promise.resolve();
+const P = (fn,...a) => PR.then(_ => fn(...a));
+const PC = (fn,self,...a) => PR.then(_ => _FPA.call(fn, self, a));
 
 const fromJ	= o => JSON.parse(o);
 const toJ	= o => JSON.stringify(o);
@@ -301,6 +305,11 @@ class _E
 
   selected(state)	{ if (state != void 0) this.$.selected = !!state; return this }
 
+  updater(fn, ...a)	{ this._upd = [fn,a]; return this }
+  UPDATE(...a)		{ return this._upd[0](this, ...this._upd[1], ...a) }
+  update(...a)		{ this.UPDATE(...a); return this }
+  UPD(...a)		{ return _ => { this.UPDATE(...a, _); return _ } }	// Promise.resolve(1).then(el.UPD()).then(_ => _===1)
+
   ON(type, fn, ...a)	{ return new ON(type).add(fn, this, ...a).attach(this) }
   on(...a)		{ this.ON(...a); return this }
 
@@ -308,7 +317,7 @@ class _E
 
   target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
   href(link)		{ return this.attr({href:link}) }
-  attr(a)		{ if (a) for (const b in a) for (const e of this._E) e.setAttribute(b, a[b]); return this }
+  attr(a)		{ if (a) for (const b in a) for (const e of this._E) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
   style(a)		{ if (a) for (const b in a) for (const e of this._E) e.style[b] = a[b]; return this }
   prepend(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.prepend(b); return this }
   add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.appendChild(b); return this }
