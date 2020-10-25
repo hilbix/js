@@ -235,11 +235,229 @@ class ON
     }
   }
 
+
+// A DOM.styles proxy for _E() below
+const Styles = (props =>
+  {
+    return e => new Proxy(e,
+      { get: function (ob, prop, receiver)
+        {
+          const p = props[prop];
+          if (!p) throw new ReferenceError('unknown property '+prop);
+          if (isString(p)) prop=p;
+          return Reflect.get(ob.$.style, prop, receiver);
+        }
+      , set: function (ob, prop, val)
+        {
+          const p = props[prop];
+          if (!p) throw new ReferenceError('unknown property '+prop);
+          if (isString(p)) prop=p;
+          ob.style({[prop]:val});
+          return true;
+        }
+      , defineProperty: _ => false
+      , deleteProperty: _ => false
+      , has: function (ob, prop) { return !!props[prop] }
+      , isExtensible: _ => false
+      , preventExtensions: _ => true
+      });
+  })(
+  { // https://www.w3schools.com/jsref/dom_obj_style.asp
+    // name:			CSS-Version or replacement string, 666 is draft
+    alignContent:		3,
+    alignItems:			3,
+    alignSelf:			3,
+    animation:			3,
+    animationDelay:		3,
+    animationDirection:		3,
+    animationDuration:		3,
+    animationFillMode:		3,
+    animationIterationCount:	3,
+    animationName:		3,
+    animationTimingFunction:	3,
+    animationPlayState:		3,
+    background:			1,
+    backgroundAttachment:	1,
+    backgroundColor:		1,
+    backgroundImage:		1,
+    backgroundPosition:		1,
+    backgroundRepeat:		1,
+    backgroundClip:		3,
+    backgroundOrigin:		3,
+    backgroundSize:		3,
+    backfaceVisibility:		3,
+    border:			1,
+    borderBottom:		1,
+    borderBottomColor:		1,
+    borderBottomLeftRadius:	3,
+    borderBottomRightRadius:	3,
+    borderBottomStyle:		1,
+    borderBottomWidth:		1,
+    borderCollapse:		2,
+    borderColor:		1,
+    borderImage:		3,
+    borderImageOutset:		3,
+    borderImageRepeat:		3,
+    borderImageSlice:		3,
+    borderImageSource:		3,
+    borderImageWidth:		3,
+    borderLeft:			1,
+    borderLeftColor:		1,
+    borderLeftStyle:		1,
+    borderLeftWidth:		1,
+    borderRadius:		3,
+    borderRight:		1,
+    borderRightColor:		1,
+    borderRightStyle:		1,
+    borderRightWidth:		1,
+    borderSpacing:		2,
+    borderStyle:		1,
+    borderTop:			1,
+    borderTopColor:		1,
+    borderTopLeftRadius:	3,
+    borderTopRightRadius:	3,
+    borderTopStyle:		1,
+    borderTopWidth:		1,
+    borderWidth:		1,
+    bottom:			2,
+    boxDecorationBreak:		3,
+    boxShadow:			3,
+    boxSizing:			3,
+    captionSide:		2,
+    caretColor:			3,
+    clear:			1,
+    clip:			2,
+    color:			1,
+    columnCount:		3,
+    columnFill:			3,
+    columnGap:			3,
+    columnRule:			3,
+    columnRuleColor:		3,
+    columnRuleStyle:		3,
+    columnRuleWidth:		3,
+    columns:			3,
+    columnSpan:			3,
+    columnWidth:		3,
+    content:			2,
+    counterIncrement:		2,
+    counterReset:		2,
+    cursor:			2,
+    direction:			2,
+    display:			1,
+    emptyCells:			2,
+    filter:			3,
+    flex:			3,
+    flexBasis:			3,
+    flexDirection:		3,
+    flexFlow:			3,
+    flexGrow:			3,
+    flexShrink:			3,
+    flexWrap:			3,
+    cssFloat:			1,
+    font:			1,
+    fontFamily:			1,
+    fontSize:			1,
+    fontStyle:			1,
+    fontVariant:		1,
+    fontWeight:			1,
+    fontSizeAdjust:		3,
+    fontStretch:		3,
+    hangingPunctuation:		3,
+    height:			1,
+    hyphens:			3,
+    icon:			3,
+    imageOrientation:		3,
+    isolation:			3,
+    justifyContent:		3,
+    left:			2,
+    letterSpacing:		1,
+    lineHeight:			1,
+    listStyle:			1,
+    listStyleImage:		1,
+    listStylePosition:		1,
+    listStyleType:		1,
+    margin:			1,
+    marginBottom:		1,
+    marginLeft:			1,
+    marginRight:		1,
+    marginTop:			1,
+    maxHeight:			2,
+    maxWidth:			2,
+    minHeight:			2,
+    minWidth:			2,
+    navDown:			3,
+    navIndex:			3,
+    navLeft:			3,
+    navRight:			3,
+    navUp:			3,
+    objectFit:			3,
+    objectPosition:		3,
+    opacity:			3,
+    order:			3,
+    orphans:			2,
+    outline:			2,
+    outlineColor:		2,
+    outlineOffset:		3,
+    outlineStyle:		2,
+    outlineWidth:		2,
+    overflow:			2,
+    overflowX:			3,
+    overflowY:			3,
+    padding:			1,
+    paddingBottom:		1,
+    paddingLeft:		1,
+    paddingRight:		1,
+    paddingTop:			1,
+    pageBreakAfter:		2,
+    pageBreakBefore:		2,
+    pageBreakInside:		2,
+    perspective:		3,
+    perspectiveOrigin:		3,
+    position:			2,
+    quotes:			2,
+    resize:			3,
+    right:			2,
+    scrollBehavior:		666,
+    tableLayout:		2,
+    tabSize:			3,
+    textAlign:			1,
+    textAlignLast:		3,
+    textDecoration:		1,
+    textDecorationColor:	3,
+    textDecorationLine:		3,
+    textDecorationStyle:	3,
+    textIndent:			1,
+    textJustify:		3,
+    textOverflow:		3,
+    textShadow:			3,
+    textTransform:		1,
+    top:			2,
+    transform:			3,
+    transformOrigin:		3,
+    transformStyle:		3,
+    transition:			3,
+    transitionProperty:		3,
+    transitionDuration:		3,
+    transitionTimingFunction:	3,
+    transitionDelay:		3,
+    unicodeBidi:		2,
+    userSelect:			2,
+    verticalAlign:		1,
+    visibility:			2,
+    whiteSpace:			1,
+    width:			1,
+    wordBreak:			3,
+    wordSpacing:		1,
+    wordWrap:			3,
+    widows:			2,
+    zIndex:			2,
+  });
+
 // This is an element wrapper (not really like jQuery).
 // var input = E().DIV.text('hello world ').INPUT;
 class _E
   {
-  constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0] }
+  constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0]; this._cache = {} }
   get $()		{ return this._e; }
   get $$()		{ return E(this._e.parentNode); }
 
@@ -276,6 +494,8 @@ class _E
   get $checked()	{ return this.$.checked }
   set $checked(b)	{ this.$.checked = !!b }
 
+  get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
+
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
   TEXT(...s)		{ return this._ADD(document.createTextNode(s.join(' '))) }
@@ -300,8 +520,8 @@ class _E
   get SELECT()		{ return this._MK('select') }
   get OPTION()		{ return this._MK('option') }
 
-  get selectedOptions()	{ return (function *() { for (var a of this.$.selectedOptions) yield E(a) }).call(this) }
-  get selectedOption()	{ return E(this.selectedOptions.next().value) }
+  get $options()	{ return (function *() { for (var a of this.$.selectedOptions) yield E(a) }).call(this) }
+  get $option()		{ return E(this.$?.selectedOptions[0]) }
 
   selected(state)	{ if (state != void 0) this.$.selected = !!state; return this }
 
@@ -341,6 +561,7 @@ class _E
       return E(ret);
     }
   }
+
 
 // asynchronous Bidirectional communication queue
 // q = new Q()
@@ -602,6 +823,7 @@ const UrlState = (x => x())(function(){
   const keeper = new Keeper(init(), change);
   return id => reg[id] || (reg[id] = new Keep(keeper, id));
 });
+
 
 // Why no .POP()/.SHIFT()/.HEAD()/.TAIL()/.FIRST()/.LAST()?  Because this would be very confusing:
 // Array.pop() removes the tail (most recent or last added element by Array.push())
