@@ -81,6 +81,7 @@ function UD(x) { return decodeURIComponent(x) }	// WTF? BTW: Out of 666 characte
 function HE(x) { return String(x).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`) }
 function HD(x) { return String(x).replace(/&#(\d)+;/g, (s,c) => String.fromCharChode(c)) }
 function HU(x) { return HE(UE(x)) }	// special short form
+function JU(x) { return UE(toJ(x)) }	// very special short form
 
 class Cancelled
   {
