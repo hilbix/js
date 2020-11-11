@@ -501,10 +501,32 @@ class _E
   _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
   TEXT(...s)		{ return this._ADD(document.createTextNode(s.join(' '))) }
   text(...s)		{ this.TEXT(...s); return this }
+  ctext(...s)		{ this.center().TEXT(...s); return this }
+  ltext(...s)		{ this.left().TEXT(...s); return this }
+  jtext(...s)		{ this.justify().TEXT(...s); return this }
+  ntext(...s)		{ this.nobr().TEXT(...s); return this }
+  ptext(...s)		{ this.pre().TEXT(...s); return this }
+  rtext(...s)		{ this.right().TEXT(...s); return this }
   value(...s)		{ this.$value = s.join(' '); return this }
   src(s)		{ this.$src = s; return this }
   alt(...s)		{ this.$alt = s.join(' '); return this }
   checked(b)		{ this.$checked = b; return this }
+  align(a)		{ this.$.align = a; return this }
+  center()		{ return this.align('center') }
+  justify()		{ return this.align('justify') }
+  left()		{ return this.align('left') }
+  right()		{ return this.align('right') }
+  // https://developer.mozilla.org/en-US/docs/Web/CSS/white-space
+  // pre:	preserve,preserve,nowrap,preserve
+  // nowrap:	collapse,collapse,nowrap,remove
+  // I want:	preserve,collapse,nowrap,remove
+  // I (nearly always!) need something like pre which is collapsing spaces and tabs!
+  // Guess what's missing from the spec!?!
+  // So the 2nd next thing is to use 'nowrap', which needs to do line separation myself in case it is multi-line.
+  // However this is better than 'pre', which always collapses the spaces myself when single-line.
+  ws(x)			{ return this.style({ whiteSpace:x }) }
+  nobr()		{ return this.ws('nowrap') }
+  pre()			{ return this.ws('pre') }
   get DIV()		{ return this._MK('div') }
   get A()		{ return this._MK('a') }
   get IMG()		{ return this._MK('img') }
