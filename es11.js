@@ -534,6 +534,7 @@ class _E
   get BR()		{ return this._MK('br') }
   get TD()		{ return this._MK('td') }
   get TH()		{ return this._MK('th') }
+  get HR()		{ return this._MK('hr') }
   get SPAN()		{ return this._MK('span') }
   get CHECKBOX()	{ return this._MK('input', {type:'checkbox'}) }
   get INPUT()		{ return this._MK('input', {type:'text'}) }
