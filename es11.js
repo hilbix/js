@@ -758,7 +758,7 @@ class Keeper
       this._args	= args;
       this._state	= state || {};
     }
-  perm(s)  { this.change(...args, void 0, s) }
+  perm(s)  { this._change(...args, void 0, s) }
   get(s)   { return this._state[s] }
   states() { return Object.keys(this._state) }
   set(s,v)
