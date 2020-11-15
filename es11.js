@@ -27,7 +27,7 @@ const CC = (fn,self,...a) => CA(fn,self,a);			// Curry Call (with self)
 const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
 const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
 //DONOTHING
-const DomReady	= new Promise(ok => document.addEventListener('DOMContentLoaded', ok));
+const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
 //E()
 const THROW = e => { console.log('ERROR', e); throw (e instanceof Event ? e : new Error(e)) }
 //Get()	fetch via 'GET'
