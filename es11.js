@@ -794,11 +794,10 @@ const UrlState = (x => x())(function(){
       a.shift();	// remove first empty element
       for (var b of a)
         {
-          const s = UD(b);
-          const i = s.indexOf(':');
+          const i = b.indexOf(':');
           if (i<0) continue;		// ignore crap
-          const k	= s.substring(0,i);
-          var v	= s.substring(i+1);
+          const k	= UD(b.substring(0,i));
+          var v	= UD(b.substring(i+1));
           try {
             v	= JSON.parse(v);
           } catch (e) {
@@ -822,7 +821,7 @@ const UrlState = (x => x())(function(){
       const dat = [ location.href.split('#',1).shift() ];
 
       for (const a of keeper.states())
-        dat.push(UE(a+':'+JSON.stringify(keeper.get(a))));
+        dat.push(UE(a)+':'+UE(JSON.stringify(keeper.get(a))));
       dat.push('')
 
       const url = dat.join('#')
