@@ -494,19 +494,30 @@ class _E
   set $alt(u)		{ this.$.alt = u }
   get $checked()	{ return this.$.checked }
   set $checked(b)	{ this.$.checked = !!b }
+  get $class()		{ return this.$.classList }
 
   get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
   TEXT(...s)		{ return this._ADD(document.createTextNode(s.join(' '))) }
-  text(...s)		{ this.TEXT(...s); return this }
-  ctext(...s)		{ this.center().TEXT(...s); return this }
-  ltext(...s)		{ this.left().TEXT(...s); return this }
-  jtext(...s)		{ this.justify().TEXT(...s); return this }
-  ntext(...s)		{ this.nobr().TEXT(...s); return this }
-  ptext(...s)		{ this.pre().TEXT(...s); return this }
-  rtext(...s)		{ this.right().TEXT(...s); return this }
+  text(...s)
+    {
+      for (const a of s)
+        if (isArray(a))
+          this.text(...a)
+        else if (isString(a))
+          this.TEXT(a);
+        else
+          this._ADD(a);
+      return this;
+    }
+  ctext(...s)		{ return this.center().text(...s) }
+  ltext(...s)		{ return this.left().text(...s) }
+  jtext(...s)		{ return this.justify().text(...s) }
+  ntext(...s)		{ return this.nobr().text(...s) }
+  ptext(...s)		{ return this.pre().text(...s) }
+  rtext(...s)		{ return this.right().text(...s) }
   value(...s)		{ this.$value = s.join(' '); return this }
   src(s)		{ this.$src = s; return this }
   alt(...s)		{ this.$alt = s.join(' '); return this }
@@ -534,6 +545,8 @@ class _E
   get BR()		{ return this._MK('br') }
   get TD()		{ return this._MK('td') }
   get TH()		{ return this._MK('th') }
+  get THEAD()		{ return this._MK('thead') }
+  get TBODY()		{ return this._MK('tbody') }
   get HR()		{ return this._MK('hr') }
   get SPAN()		{ return this._MK('span') }
   get CHECKBOX()	{ return this._MK('input', {type:'checkbox'}) }
@@ -543,6 +556,9 @@ class _E
   get BUTTON()		{ return this._MK('button') }
   get SELECT()		{ return this._MK('select') }
   get OPTION()		{ return this._MK('option') }
+
+  th(...a)		{ for (const t of a) this.TH.text(t); return this }
+  td(...a)		{ for (const t of a) this.TD.text(t); return this }
 
   get $options()	{ return (function *() { for (var a of this.$.selectedOptions) yield E(a) }).call(this) }
   get $option()		{ return E(this.$?.selectedOptions[0]) }
@@ -566,6 +582,12 @@ class _E
   prepend(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.prepend(b); return this }
   add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.appendChild(b); return this }
   attach(p)		{ E(p).add(this); return this }
+
+  addclass(...c)	{ this.$class.add(...c); return this }
+  rmclass(...c)		{ this.$class.remove(...c); return this }
+  replaceclass(old,c)	{ this.$class.replace(old,c); return this }
+  toggleclass(...c)	{ for (const a in c) this.$class.toggle(a); return this }
+  has_class(c)		{ return this.$class.contains(c) }
 
   clr()			{ var a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this; }
 
