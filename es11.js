@@ -1,4 +1,6 @@
 'use strict';	// this is for ES11 aka ES2020
+// This Works is placed under the terms of the Copyright Less License,
+// see file COPYRIGHT.CLL.  USE AT OWN RISK, ABSOLUTELY NO WARRANTY.
 
 // Rules for members in classes (NOT on toplevel functions):
 // Uppercase or CamelCase which starts uppercase return "async function" or "Promise".

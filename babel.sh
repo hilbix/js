@@ -30,7 +30,8 @@
 #
 # What a shame!
 #
-# License: Free as free beer, free speech, free baby, free air, free planet
+# This Works is placed under the terms of the Copyright Less License,
+# see file COPYRIGHT.CLL.  USE AT OWN RISK, ABSOLUTELY NO WARRANTY.
 
 PRESETS=@babel/preset-env
 PLUGINS=@babel/plugin-proposal-optional-chaining,@babel/plugin-proposal-class-properties,@babel/plugin-transform-runtime

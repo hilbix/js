@@ -1,4 +1,6 @@
 'use strict';	// This is for ES11 aka ES2020
+// This Works is placed under the terms of the Copyright Less License,
+// see file COPYRIGHT.CLL.  USE AT OWN RISK, ABSOLUTELY NO WARRANTY.
 
 // Minimalistic global error catcher/reporter:
 // <script src="er11.js" data-post="https://error.example.com/errortarget" data-tag="sometag"></script>
