@@ -1,8 +1,5 @@
 'use strict';	// this is for ES11 aka ES2020
 
-// <script src="es11.js" data-debug></script>
-// data-debug enables debugging
-
 // Rules for members in classes (NOT on toplevel functions):
 // Uppercase or CamelCase which starts uppercase return "async function" or "Promise".
 // All lowercase returns "this".  Always.
@@ -10,7 +7,8 @@
 // mixedCaps or ALLCAPS or functions with _ in the name or ending on it return anything.
 // Starting with _ is private, the first _ is skipped to apply the rules above.
 
-// <script src="*.js" data-debug></script>
+// <script src="es11.js" data-debug></script>
+// data-debug enables debugging
 var DEBUGGING = document.currentScript?.dataset?.debug;		// you can change this later
 
 const _FPA = Function.prototype.apply;
