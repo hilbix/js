@@ -85,8 +85,8 @@ function JU(x) { return UE(toJ(x)) }	// very special short form
 
 class Cancelled
   {
-  constructor(...a) { self._a = a; }
-  get cancelled() { return self._a }
+  constructor(...a) { this._a = a; }
+  get cancelled() { return this._a }
   };
 
 // Temporarily cache something expensive (expires at the next loop)
@@ -699,7 +699,6 @@ SHA256hex('hw')
 //
 // onoff = new OnOff();
 // a = onoff.ON(fn, args..)	// register callback
-// a = onoff.ON(fn, args..)
 // onoff.OFF(a)			// unregister callback
 // onoff.trigger(triggerargs..)	// calls all the active fn(...args, ...triggerargs)
 //
@@ -714,7 +713,7 @@ class OnOff
   trigger(...a)
     {
       for (const [k,v] of Object.entries(this._fns))
-        if (v[0].call(...v[1], ...a))
+        if (v[0].call(this, ...v[1], ...a))
           delete this._fns[k];
       return this;
     }
@@ -802,34 +801,81 @@ class Keeper
     }
   }
 
-const UrlState = (x => x())(function(){
-  const reg = new WeakMap();
-  var perm = {};
-  var save = 1;
-
-  function init()
+class Cookie extends OnOff
+  {
+  constructor(name, path, samesite)
     {
-      var a	= location.hash.split('#');
-      var ret	= {}
+      super();
+      this.name	= name;
+      this.path	= path || '/';
+      this.val	= void 0;
+      this.same	= samesite || 'Lax';
+
+      const x = `${name}=`;
+      for (var c of document.cookie.split(';'))
+        {
+          if (c.startsWith(' ')) c = c.substr(1);
+          if (c.startsWith(x))
+            {
+              this.val	= UD(c.substr(x.length));
+              this.trigger();
+              break;
+            }
+        }
+    }
+  get $()	{ return this.val }
+  set $(v)	{ return this._put(v, UE(v)) }
+  del()		{ return this._put(void 0, '; expires=Thu, 01 Jan 1970 00:00:00 UTC') }
+  trigger(...a)	{ super.trigger(...a, this.val); return this }
+  _put(v, c)
+    {
+      c = `${this.name}=${c}; path=${this.path}; SameSite=${this.same}`;	// SameSite WTF?!?
+      console.log('Cookie', c);
+
+      this.val		= v;
+      document.cookie	= c;
+
+      return this.trigger();
+    }
+  };
+
+const UrlState = (x => x())(function(){
+  var reg;
+  var perm;
+  var save;
+  var cookie;
+  var keeper;
+
+  function parse(ret, s)
+    {
+      const a	= s.split('#');
 
       a.pop();		// remove last element
       a.shift();	// remove first empty element
       for (var b of a)
-        {
+       {
           const i = b.indexOf(':');
           if (i<0) continue;		// ignore crap
           const k	= UD(b.substring(0,i));
           var v	= UD(b.substring(i+1));
           try {
-            v	= JSON.parse(v);
+            v	= fromJ(v);
           } catch (e) {
-            D('UrlState err', k, v, e)
-            continue			// ignore crap
+            D('UrlState err', k, v, e);
+            continue;			// ignore crap
           }
           ret[k]= v;
-          D('UrlState has', k, v)
+          D('UrlState has', k, v);
         }
-      return ret
+    }
+  function state(base)
+    {
+      const dat = [ base||'' ]
+
+      for (const a of keeper.states())
+        dat.push(UE(a)+':'+UE(toJ(keeper.get(a))));
+      dat.push('');
+      return dat.join('#');
     }
   function change(id,v)
     {
@@ -840,13 +886,7 @@ const UrlState = (x => x())(function(){
           return;
         }
 
-      const dat = [ location.href.split('#',1).shift() ];
-
-      for (const a of keeper.states())
-        dat.push(UE(a)+':'+UE(JSON.stringify(keeper.get(a))));
-      dat.push('')
-
-      const url = dat.join('#')
+      const url = state(location.href.split('#',1).shift());
 
       if (save)
         {
@@ -864,9 +904,29 @@ const UrlState = (x => x())(function(){
           location.replace(url);
         }
     }
+  function init(_cookie)
+    {
+      reg	= new WeakMap();
+      perm	= {};
+      save	= 1;
+      cookie	= _cookie;
 
-  const keeper = new Keeper(init(), change);
-  return id => reg[id] || (reg[id] = new Keep(keeper, id));
+      const set	= {};
+
+      if (cookie)
+        parse(set, cookie.$ || '');
+      parse(set, location.hash);
+
+      keeper = new Keeper(set, change);
+    }
+
+  init();
+  function run(id) { return reg[id] || (reg[id] = new Keep(keeper, id)) }
+  run.COOKIE	= function(name) { var c = new Cookie(name); init(c); return c }
+  run.cookie	= function(name) { this.COOKIE(name); return this }
+  run.set	= function () { if (cookie) cookie.$ = state(); return this }
+  run.del	= function () { if (cookie) cookie.del(); return this }
+  return run;
 });
 
 
