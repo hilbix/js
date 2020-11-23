@@ -494,7 +494,10 @@ class _E
   set $alt(u)		{ this.$.alt = u }
   get $checked()	{ return this.$.checked }
   set $checked(b)	{ this.$.checked = !!b }
+  get $disabled()	{ return this.$.disabled }
+  set $disabled(b)	{ this.$.disabled = !!b }
   get $class()		{ return this.$.classList }
+  set $class(o)		{ for (const a in o) this.$.classList.toggle(a, o[a]); return this }
 
   get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
 
@@ -522,6 +525,7 @@ class _E
   src(s)		{ this.$src = s; return this }
   alt(...s)		{ this.$alt = s.join(' '); return this }
   checked(b)		{ this.$checked = b; return this }
+  disabled(b)		{ this.$disabled = b; return this }
   align(a)		{ this.$.align = a; return this }
   center()		{ return this.align('center') }
   justify()		{ return this.align('justify') }
@@ -583,6 +587,7 @@ class _E
   add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.appendChild(b); return this }
   attach(p)		{ E(p).add(this); return this }
 
+  setclass(o)		{ this.$class = o }
   addclass(...c)	{ this.$class.add(...c); return this }
   rmclass(...c)		{ this.$class.remove(...c); return this }
   replaceclass(old,c)	{ this.$class.replace(old,c); return this }
