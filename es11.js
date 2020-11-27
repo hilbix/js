@@ -146,10 +146,13 @@ const single_run = (fn, ...a) =>
 
 try {
   new WeakRef({});
+  var es11WeakRef = WeakRef;
+  console.log('es11WeakRef supported');
 } catch {
+  console.log('es11WeakRefs faked');
   // Not a working WeakRef mixin
   // (This cannot be implemented with WeakMap)
-  window.WeakRef = class
+  var es11WeakRef = class
     {
     constructor(o) { this._o = o }
     deref() { return this._o }
@@ -176,7 +179,7 @@ const E = (function(){
 
 //    D('E',e);
       w	= new _E(e);
-      weak_refs.set(e, new WeakRef(w));	// both sides are weak!
+      weak_refs.set(e, new es11WeakRef(w));	// both sides are weak!
       return w;
     }
 })();
@@ -218,7 +221,7 @@ class ON
         for (const e of o)
           {
             e.addEventListener(this._type, this, true);
-            this._el.push(new WeakRef(e));
+            this._el.push(new es11WeakRef(e));
           }
       return this;
     }
