@@ -512,10 +512,10 @@ class _E
       for (const a of s)
         if (isArray(a))
           this.text(...a)
-        else if (isString(a))
-          this.TEXT(a);
-        else
+        else if (a instanceof _E || a instanceof Element)
           this._ADD(a);
+        else
+          this.TEXT(a);
       return this;
     }
   ctext(...s)		{ return this.center().text(...s) }
