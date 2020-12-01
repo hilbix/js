@@ -603,6 +603,13 @@ class _E
 const E = (function(){
   const weak_refs = new WeakMap();
 
+  // this does not work with getters, but it need not.
+  Object.entries(Object.getOwnPropertyDescriptors(_E.prototype)).forEach(_ =>
+    {
+      const get = _[1].get;
+      Object.defineProperty(fn, _[0], get ? { get } : { value:_[1].value });
+    });
+
   return fn;
 
   // Without real WeakMap this is a GC nightmare
