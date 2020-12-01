@@ -29,7 +29,7 @@ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'
 //DONOTHING
 const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
 //E()
-const THROW = e => { console.log('ERROR', e); throw (e instanceof Event ? e : new Error(e)) }
+const THROW = e => { D('ERROR', e); throw (e instanceof Event ? e : new Error(e)) }
 //Get()	fetch via 'GET'
 const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
 const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
@@ -148,9 +148,9 @@ const single_run = (fn, ...a) =>
 try {
   new WeakRef({});
   var es11WeakRef = WeakRef;
-  console.log('es11WeakRef supported');
+  CONSOLE('es11WeakRef supported');
 } catch {
-  console.log('es11WeakRefs faked');
+  CONSOLE('es11WeakRefs faked');
   // Not a working WeakRef mixin
   // (This cannot be implemented with WeakMap)
   var es11WeakRef = class
@@ -845,7 +845,7 @@ class Cookie extends OnOff
   _put(v, c)
     {
       c = `${this.name}=${c}; path=${this.path}; SameSite=${this.same}`;	// SameSite WTF?!?
-      console.log('Cookie', c);
+      D('Cookie', c);
 
       this.val		= v;
       document.cookie	= c;
