@@ -216,7 +216,7 @@ class ON
   }
 
 
-// A DOM.styles proxy for _E() below
+// A DOM.styles proxy for class _E below
 const Styles = (props =>
   {
     return e => new Proxy(e,
@@ -641,7 +641,7 @@ const E = (function(){
 const T = (...s) => E(document.createTextNode(s.join(' ')));
 
 // Create DOM Elements wrapped in class _E
-// X('div') creates a DIV (compare E().DIV)
+// X('div') creates a DIV (compare E.DIV)
 // X('div', 'br', 'span') creates three elements in E(), where .$ is the 'div'
 // X(['ul', ['li', 'br', 'span'
 const X = (...args) =>
