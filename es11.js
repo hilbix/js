@@ -49,6 +49,7 @@ function IGN(...a)    { return (...b) => CONSOLE(...a, ...b) }	// Promise.reject
 // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
 const PR = Promise.resolve();	// PRomise
 const PE = Promise.reject();	// PromisErr
+PE.catch(DONOTHING);		// shutup "Uncaught in Promise" due to PE
 const P = (fn,...a) => PR.then(() => fn(...a));
 const PC = (fn,self,...a) => PR.then(() => _FPA.call(fn, self, a));
 
