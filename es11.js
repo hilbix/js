@@ -16,7 +16,7 @@ var DEBUGGING = document.currentScript?.dataset?.debug;		// you can change this 
 const _FPA = Function.prototype.apply;
 const _FPC = Function.prototype.call;
 const DONOTHING = function(){}					// The "do nothing" DUMMY function
-const CONSOLE = function (...a) { console.log(...a) }		// returns void
+let CONSOLE = function (...a) { console.log(...a) }		// returns void
 
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
@@ -507,13 +507,13 @@ class _E
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
-  TEXT(...s)		{ return this._ADD(document.createTextNode(s.join(' '))) }
+  TEXT(...s)		{ return this._ADD(T(...s)) }
   text(...s)
     {
       for (const a of s)
         if (isArray(a))
           this.text(...a)
-        else if (a instanceof _E || a instanceof Element)
+        else if (a instanceof _E || a instanceof Node)
           this._ADD(a);
         else
           this.TEXT(a);
@@ -617,6 +617,11 @@ class _E
     }
   }
 
+// Create a TEXT node
+//
+// This is NOT wrapped into class _E, as a TEXT nodes are Nodes, not Elements
+const T = (...s) => document.createTextNode(s.join(' '));
+const X = (e) => document.createElement(e));
 
 // asynchronous Bidirectional communication queue
 // q = new Q()
