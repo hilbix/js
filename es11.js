@@ -161,31 +161,6 @@ try {
     }
 }
 
-const E = (function(){
-
-  const weak_refs = new WeakMap();
-
-  // Without real WeakMap this is a GC nightmare
-  // We want E to stay along as long as the referenced object stays
-  return function (e)
-    {
-//    D('E', e);
-      if (e === void 0) return new _E();
-      if (e instanceof _E) return e;
-      if (isString(e)) e = document.getElementById(e);
-      if (!e)
-        return e;
-
-      var w = weak_refs.get(e);
-      if (w) { w = w.deref(); if (w) return w }	// w is WeakRef
-
-//    D('E',e);
-      w	= new _E(e);
-      weak_refs.set(e, new es11WeakRef(w));	// both sides are weak!
-      return w;
-    }
-})();
-
 // ON-Event class (in the capture phase by default)
 // If the handling returns trueish, processing of the event stops.
 // `this` is set to the ON-instance within the function (if not bound elsewhere)
@@ -619,6 +594,42 @@ class _E
       return E(ret);
     }
   }
+
+// Create a DOM Element (class _E below).
+// To improve usage, this is idempotent, so E(E(x)) === E(x)
+// E() create undefined element.  This is not a parent, but E().DIV
+// E(string) is the same as E(document.getElementById(string))
+// E(element) create an element
+// E([elements])
+const E = (function(){
+  const weak_refs = new WeakMap();
+
+  return fn;
+
+  // Without real WeakMap this is a GC nightmare
+  // We want E to stay along as long as the referenced object stays
+  function fn(...e)
+    {
+//    D('E', e);
+      if (!e.length) return new _E();
+      if (e.length==1)
+        e	= e[0];
+      if (!isArray(e))
+        {
+          if (e instanceof _E) return e;
+          if (isString(e)) e = document.getElementById(e);
+          if (!e || !(e instanceof Node))
+            return e;
+        }
+      var w = weak_refs.get(e);
+      if (w) { w = w.deref(); if (w) return w }	// w is WeakRef
+
+//    D('E',e);
+      w	= new _E(e);
+      weak_refs.set(e, new es11WeakRef(w));	// both sides are weak!
+      return w;
+    }
+})();
 
 // Create a TEXT node
 const T = (...s) => E(document.createTextNode(s.join(' ')));
