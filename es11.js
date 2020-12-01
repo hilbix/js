@@ -47,9 +47,10 @@ function KOK(...a)    { return DD(...a) }			// Promise.reject().catch(KOK('shown
 function IGN(...a)    { return (...b) => CONSOLE(...a, ...b) }	// Promise.reject().catch(IGN('always log fail')).then(executed)
 
 // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
-const PR = Promise.resolve();
-const P = (fn,...a) => PR.then(_ => fn(...a));
-const PC = (fn,self,...a) => PR.then(_ => _FPA.call(fn, self, a));
+const PR = Promise.resolve();	// PRomise
+const PE = Promise.reject();	// PromisErr
+const P = (fn,...a) => PR.then(() => fn(...a));
+const PC = (fn,self,...a) => PR.then(() => _FPA.call(fn, self, a));
 
 const fromJ	= o => JSON.parse(o);
 const toJ	= o => JSON.stringify(o);
@@ -625,11 +626,12 @@ class Q
   {
   constructor() { this._i = []; this._o = []; this._single = single_run(_ => this._Step()) }
 
+  Prio(...d)	{ return this.Proc(this._i, d, 1) }
   Push(...d)	{ return this.Proc(this._i, d) }
   Pop(...d)	{ return this.Proc(this._o, d) }
-  Proc(a,d)
+  Proc(a,d, prio)
     {
-      const p = d.map(m => new Promise((ok,ko) => a.push([m, ok, ko])));
+      const p = d.map(m => new Promise((ok,ko) => prio ? a.unshift([m,ok,ko]) : a.push([m, ok, ko])));
       this._single().catch(DONOTHING);
       //D('Q.Proc', a, d, p);
       return p.length==1 ? p[0] : Promise.all(p);
