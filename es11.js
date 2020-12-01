@@ -28,8 +28,7 @@ const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
 const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
 //DONOTHING
 const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
-//E()
-const THROW = e => { D('ERROR', e); throw (e instanceof Event ? e : new Error(e)) }
+//E() see below
 //Get()	fetch via 'GET'
 const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
 const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
@@ -58,7 +57,7 @@ const toJ	= o => JSON.stringify(o);
 const Sleep	= ms => r => new Promise(ok => setTimeout(ok, ms, r))
 const Sleeperr	= ms => r => new Promise((ok,ko) => setTimeout(ko, ms, r))
 
-const raise	= e => { throw e }
+const THROW	= e => { D('ERROR', e); throw (e instanceof Event ? e : new Error(e)) }
 
 // fetch() promises
 const Fetch	= (u, o) => fetch(u,o).then(r => r.ok ? r : Promise.reject(`${r.status}: ${r.url}`))
@@ -70,8 +69,8 @@ const _MUJ	= m => _MTFUD(m, 'application/json', JSON.stringify)
 const PostJSON	= _MUJ('POST')
 const PutJSON	= _MUJ('PUT')
 
-const Json	= p => p.then(r => r.status==200 ? r.json() : raise(r.status))
-const Text	= p => p.then(r => r.status==200 ? r.text() : raise(r.status))
+const Json	= p => p.then(r => r.status==200 ? r.json() : THROW(r.status))
+const Text	= p => p.then(r => r.status==200 ? r.text() : THROW(r.status))
 const GetText	= u => Text(Get(u))
 const GetJSON	= u => Json(Get(u))
 
