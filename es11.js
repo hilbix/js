@@ -596,14 +596,22 @@ class _E
 
 // Create a DOM Element (class _E below).
 // To improve usage, this is idempotent, so E(E(x)) === E(x)
-// E() create undefined element.  This is not a parent, but E().DIV
+// E() creates an undefined element.  This cannot be a parent, but you can call E().DIV
+//	Note: You can use E.DIV, too
 // E(string) is the same as E(document.getElementById(string))
-// E(element) create an element
-// E([elements])
+// E(node) create an element (cached on element)
+//	Note: to be able to iterate, textnodes can be wrapped, too
+// E(a,b) create a list of elements (not cached) as given
+//	Note: all should be Nodes, else strange things might happen.
+//	(For performance reason this is not enforced.)
+// E([e]) === E(e) and E([a,b]) === E(a,b)
 const E = (function(){
   const weak_refs = new WeakMap();
 
-  // this does not work with getters, but it need not.
+  Object.defineProperty(fn, '_E', { value:[] });
+
+  // This is not perfect, as it copies functions,
+  // which do not work.  But we ignore this for now.
   Object.entries(Object.getOwnPropertyDescriptors(_E.prototype)).forEach(_ =>
     {
       const get = _[1].get;
@@ -617,16 +625,22 @@ const E = (function(){
   function fn(...e)
     {
 //    D('E', e);
-      if (!e.length) return new _E();
-      if (e.length==1)
-        e	= e[0];
-      if (!isArray(e))
+      if (e.length!=1)
+        return new _E(e);
+
+      CONSOLE('E', e);
+      do
         {
-          if (e instanceof _E) return e;
-          if (isString(e)) e = document.getElementById(e);
-          if (!e || !(e instanceof Node))
-            return e;
+          e	= e[0];
+        } while (isArray(e) && e.length==1);
+      if (e instanceof _E) return e;
+      if (isString(e)) e = document.getElementById(e);
+      if (!e || !(e instanceof Node))
+        {
+          console.log('WTF', 'E', e);
+          return e;
         }
+
       var w = weak_refs.get(e);
       if (w) { w = w.deref(); if (w) return w }	// w is WeakRef
 
