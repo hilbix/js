@@ -488,8 +488,8 @@ class _E
 //  set $(e)		{ this._e = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
 //  e(e)			{ if (e) this.$ = e; return this }
 
-  get $text()		{ return this.$.innerText }
-  set $text(s)		{ return this.$.innerText = s }
+  get $text()		{ return this.$.textContent }		// innerText causes reflow
+  set $text(s)		{ return this.$.textContent = s }	// innerText has bad siedeffects on IE<=11
   get $value()		{ return this.$.value }
   set $value(v)		{ this.$.value = v }
   get $src()		{ return this.$.src }
