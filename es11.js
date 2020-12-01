@@ -465,7 +465,7 @@ class _E
   {
   constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0]; this._cache = {} }
   get $()		{ return this._e; }
-  get $$()		{ return E(this._e.parentNode); }
+  get $$()		{ return E(this._e?.parentNode); }
 
   get x()		{ return this._pos().x }
   get y()		{ return this._pos().y }
@@ -507,7 +507,7 @@ class _E
   get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
-  _MK(e,attr)		{ return this._ADD(document.createElement(e)).attr(attr) }
+  _MK(e,attr)		{ return this._ADD(X(e)).attr(attr) }
   TEXT(...s)		{ return this._ADD(T(...s)) }
   text(...s)
     {
@@ -609,6 +609,8 @@ class _E
   *[Symbol.iterator]()	{ for (const e of this._E) yield e }
   MAP(fn, ...a)		{ const r=[]; for (const e of this._E) r.push(fn(e, ...a)); return r }
 
+  // E().ALL(selector) queries on the document
+  // but: E().clr() does NOT clear the document!
   ALL(sel)
     {
       var ret = [];
@@ -619,10 +621,38 @@ class _E
   }
 
 // Create a TEXT node
-//
-// This is NOT wrapped into class _E, as a TEXT nodes are Nodes, not Elements
-const T = (...s) => document.createTextNode(s.join(' '));
-const X = (e) => document.createElement(e));
+const T = (...s) => E(document.createTextNode(s.join(' ')));
+
+// Create DOM Elements wrapped in class _E
+// X('div') creates a DIV (compare E().DIV)
+// X('div', 'br', 'span') creates three elements in E(), where .$ is the 'div'
+// X(['ul', ['li', 'br', 'span'
+const X = (...args) =>
+  {
+    var has = new Set();
+    var x=[];
+
+    function dom(_)
+      {
+        if (has.has(_))	return;				// avoid infinite recursion
+        has.add(_);
+//        if (_[0] instanceof Function)
+        for (const e of _)
+          {
+            if (isArray(e))
+              dom(e);					// recurse arrays
+            else if (e instanceof _E)
+              for (const k in e)
+                x.push(k);				// all element in E()
+            else if (e instanceof Node)
+              x.push(e);				// nodes
+            else
+              x.push(document.createElement(e));	// maybe HTMLUnknownElement
+          }
+      }
+    dom(args);
+    return E(x);
+  };
 
 // asynchronous Bidirectional communication queue
 // q = new Q()
