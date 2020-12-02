@@ -435,10 +435,33 @@ const Styles = (props =>
 
 // This is an element wrapper (not really like jQuery).
 // var input = E().DIV.text('hello world ').INPUT;
-class _E
+class _E0
   {
-  constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0]; this._cache = {} }
+  constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0] }
   get $()		{ return this._e; }
+
+  rm()			{ for (const e of this._E) e.remove(); return this }
+  clr()			{ let a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this; }
+
+  *[Symbol.iterator]()	{ for (const e of this._E) yield e }
+  *MAP(fn, ...a)	{ const r=[]; for (const e of this._E) yield fn(e, ...a) }
+
+  // E().ALL(selector) queries on the document
+  // but: E().clr() does NOT clear the document!
+  ALL(sel)
+    {
+      var ret = [];
+      for (const e of defArr(this._E, document))
+        e.querySelectorAll(sel).forEach(_ => ret.push(_));
+      const r = E(ret);
+      D('ALL', sel, r);
+      return r;
+    }
+  }
+class _E extends _E0
+  {
+  constructor(e)	{ super(e); this._cache = {} }
+
   get $$()		{ return E(this._e?.parentNode); }
 
   get x()		{ return this._pos().x }
@@ -488,7 +511,7 @@ class _E
       for (const a of s)
         if (isArray(a))
           this.text(...a)
-        else if (a instanceof _E || a instanceof Node)
+        else if (a instanceof _E0 || a instanceof Node)
           this._ADD(a);
         else
           this.TEXT(a);
@@ -556,8 +579,6 @@ class _E
   ON(type, fn, ...a)	{ return new ON(type).add(fn, this, ...a).attach(this) }
   on(...a)		{ this.ON(...a); return this }
 
-  rm()			{ for (const e of this._E) e.remove(); return this }
-
   target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
   href(link)		{ return this.attr({href:link}) }
   attr(a)		{ if (a) for (const b in a) for (const e of this._E) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
@@ -573,25 +594,10 @@ class _E
   toggleclass(...c)	{ for (const a in c) this.$class.toggle(a); return this }
   has_class(c)		{ return this.$class.contains(c) }
 
-  clr()			{ var a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this; }
-
   Run(fn, ...a)		{ return PC(fn, this, ...a) }
   run(...a)		{ this.Run(...a); return this }
 
   Loaded()		{ return Promise.all(this.MAP(_ => _.decode())) }
-
-  *[Symbol.iterator]()	{ for (const e of this._E) yield e }
-  MAP(fn, ...a)		{ const r=[]; for (const e of this._E) r.push(fn(e, ...a)); return r }
-
-  // E().ALL(selector) queries on the document
-  // but: E().clr() does NOT clear the document!
-  ALL(sel)
-    {
-      var ret = [];
-      for (const e of defArr(this._E, document))
-        e.querySelectorAll(sel).forEach(_ => ret.push(_));
-      return E(ret);
-    }
   }
 
 // Create a DOM Element (class _E below).
@@ -672,7 +678,7 @@ const X = (...args) =>
           {
             if (isArray(e))
               dom(e);					// recurse arrays
-            else if (e instanceof _E)
+            else if (e instanceof _E0)
               for (const k in e)
                 x.push(k);				// all element in E()
             else if (e instanceof Node)
