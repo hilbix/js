@@ -630,20 +630,20 @@ const E = (function(){
   // We want E to stay along as long as the referenced object stays
   function fn(...e)
     {
+      const a = e;
 //    D('E', e);
-      if (e.length!=1)
-        return new _E(e);
-
-      CONSOLE('E', e);
       do
         {
+          if (e.length != 1)
+            return new _E(e);
           e	= e[0];
-        } while (isArray(e) && e.length==1);
-      if (e instanceof _E) return e;
+        } while (isArray(e));
+
+      if (e instanceof _E0) return e;
       if (isString(e)) e = document.getElementById(e);
       if (!e || !(e instanceof Node))
         {
-          console.log('WTF', 'E', e);
+          console.log('E called with invalid object', a);
           return e;
         }
 
