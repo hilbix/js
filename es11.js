@@ -1145,6 +1145,53 @@ class LRU		// Clean LRU key/value cache implementation
   };
 
 
+// Cache class able of caching multiple values
+// w = new WeakCache()
+// w.GET([], () => 1)		returns 1
+// w.SET([], 2)
+// w.GET([], void 0, 3)		returns 2
+// This is weak on the keys passed in via the first array
+class WeakCache
+  {
+  #c; #f; #a
+
+  constructor(fn, ...args)
+    {
+      this.#c	= [ new WeakMap() ];
+      this.#f	= fn || (_ => _);
+      this.#a	= args;
+    }
+  get factory()
+    {
+      return (...args) => GET(args);
+    }
+  #map(arr)
+    {
+      let map = this.#c;
+      for (const i of arr)
+        {
+          let w = map[0].get(i);
+          if (!w)
+            {
+              w	= [ new WeakMap() ];
+              map.set(i, w);
+            }
+        }
+      return map;
+    }
+  set(arr, val)
+    {
+      this.#map(arr)[1] = val;
+      return this;
+    }
+  GET(arr, filler, ...args)
+    {
+      const map = this.#map(arr);
+      return map.length==2 ? map[1] : map[1] = (filler || this.#f)(...(args || this.#a), arr);
+    }
+  };
+
+
 //
 // NOT IMPLEMENTED YET below
 //
