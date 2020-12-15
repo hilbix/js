@@ -479,10 +479,10 @@ class _E extends _E0
 
   get $$()		{ return E(this._e?.parentNode); }
 
-  get x()		{ return this._pos().x }
-  get y()		{ return this._pos().y }
-  get w()		{ return this.$.offsetWidth }
-  get h()		{ return this.$.offsetHeight }
+  get $x()		{ return this._pos().x }
+  get $y()		{ return this._pos().y }
+  get $w()		{ return this.$.offsetWidth }
+  get $h()		{ return this.$.offsetHeight }
   _pos = tmpcache(function ()
     {
       var o = this._e;
