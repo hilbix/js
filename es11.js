@@ -16,7 +16,7 @@ var DEBUGGING = document.currentScript?.dataset?.debug;		// you can change this 
 const _FPA = Function.prototype.apply;
 const _FPC = Function.prototype.call;
 const DONOTHING = function(){}					// The "do nothing" DUMMY function
-let CONSOLE = function (...a) { console.log(...a) }		// returns void
+let CONSOLE = function (...a) { console.log(...a) }		// returns void 0
 
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
@@ -38,12 +38,28 @@ const isInt	= i => Number.isInteger(i);
 const mkArr = x => Array.isArray(x) ? x : [x];
 const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }
 
+// I hate this.  Why is debugging Promises so hard?  Why isn't it built in?
 // Promise.resolve(1).then(OK).catch(KO).then(...OKO('mypromise'))
-function KO(e, ...a)  { D('catch', e, ...a); throw e }	// Promise.reject().catch(KO).then(not_executed)
-function OK(v, ...a)  { D('then', v, ...a); return v }
-function OKO(...a)    { return [ v => OK(v, ...a), e => KO(e, ...a) ] }
-function KOK(...a)    { return DD(...a) }			// Promise.reject().catch(KOK('shown when fail+debug')).then(executed)
-function IGN(...a)    { return (...b) => CONSOLE(...a, ...b) }	// Promise.reject().catch(IGN('always log fail')).then(executed)
+const KO = (e, ...a) =>	{ D('catch', e, ...a); throw e }	// Promise.reject().catch(KO).then(not_executed)
+const OK = (v, ...a) =>	{ D('then', v, ...a); return v }
+const OKO = (...a) =>	[ v => OK(v, ...a), e => KO(e, ...a) ]	// Promise.reject.then(...OKO('mypromise')).then(not_executed)
+const KOK = (...a) =>	DD(...a)				// Promise.reject().catch(KOK('shown when fail&debug')).then(executed)
+const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(IGN('always log fail')).then(executed)
+
+// Create real Error()s on catch chains for better processing.
+//
+// https://developer.mozilla.org/en-US/docs/Web/API/Error
+// Error() is NOT standardized, however .stack and .lineNumber etc. are supported in most browsers.
+// https://developer.mozilla.org/en-US/docs/Web/API/ErrorEvent
+// ErrorEvent() IS standardized, but does NOT contain .stack and it is barely documented.
+//
+// You can only rely on:
+// .message
+// .stack
+// everything else is too browser specific
+//
+// Promise.reject('throw').catch(THROW).catch(e => bug(e.message, e.stack))
+const THROW = e => { e = e instanceof Error ? e : e instanceof ErrorEvent ? new Error(e.message, e.filename, e.lineno, e.colno) : new Error(e); D('ERROR', e); throw e }
 
 // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
 const PR = Promise.resolve();	// PRomise
@@ -57,7 +73,6 @@ const toJ	= o => JSON.stringify(o);
 const Sleep	= ms => r => new Promise(ok => setTimeout(ok, ms, r))
 const Sleeperr	= ms => r => new Promise((ok,ko) => setTimeout(ko, ms, r))
 
-const THROW	= e => { D('ERROR', e); throw (e instanceof Event ? e : new Error(e)) }
 
 // fetch() promises
 const Fetch	= (u, o) => fetch(u,o).then(r => r.ok ? r : Promise.reject(`${r.status}: ${r.url}`))
@@ -126,13 +141,13 @@ const single_run = (fn, ...a) =>
         //D('SR', 'run', a);
         return fn(...a);	// in case it is a Promise
       };
-    async function loop()
+    function loop()
       {
         running = invoke;
         invoke = void 0;
         //D('SR', 'loop', running)
         if (running)
-          await run(...running[0], ...running[1]).then(running[2], running[3]).finally(loop)
+          run(...running[0], ...running[1]).then(running[2], running[3]).finally(loop)
       }
     return (...b) => new Promise((ok, ko) =>
       {
@@ -499,8 +514,11 @@ class _E extends _E0
   get $disabled()	{ return this.$.disabled }
   set $disabled(b)	{ this.$.disabled = !!b }
   get $class()		{ return this.$.classList }
+  // XXX TODO XXX missing: .$class = [list] so this is idempotent: .$class = .$class
+  // .$class = {classname:true, classname2:false}
   set $class(o)		{ for (const a in o) this.$.classList.toggle(a, o[a]); return this }
 
+  // Only create Style-class if it is really needed
   get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
@@ -597,7 +615,7 @@ class _E extends _E0
   Run(fn, ...a)		{ return PC(fn, this, ...a) }
   run(...a)		{ this.Run(...a); return this }
 
-  Loaded()		{ return Promise.all(this.MAP(_ => _.decode())) }
+  Loaded()		{ return Promise.all(Array.from(this.MAP(_ => _.decode()))) }
   }
 
 // Create a DOM Element (class _E below).
@@ -691,10 +709,29 @@ const X = (...args) =>
     return E(x);
   };
 
-// asynchronous Bidirectional communication queue
+// Asynchronous Bidirectional Communication Queue
 // q = new Q()
-// popdata = await q.Push(pushdata)	=> waits until data was popped, returns the popdata
-// pushdata = await q.Pop(popdata)	=> waits until data was pushed, sends popdata to sender
+// popdata = await q.Push([pushdata]..)	=> waits until pushdata was popped, returns the popdata
+// pushdata = await q.Pop([popdata]..)	=> waits until pushdata was pushed, transfers popdata to pusher
+// And you do not need to wait for Push()/Pop(), as these are Promises.
+//
+// Note that you can push/pop multiple messages:
+// q.Push(msg1, msg2, msg3).then(ans => console.log('msg1',ans[0], 'msg2',ans[1], 'msg3',ans[2]))
+// q.Pop('ans1','ans2','ans3');		// But there is no synchronization!
+//
+// Why?  Because of symmetry.  Consider:
+// q.Push(A)		gives	q.Pop() === A		so
+// q.Push(['a','b'])	gives	q.Pop() == ['a','b']	but:
+// q.Push('a','b')	gives	q.Pop() == ['a','b']	as well?!?  Or what should it give instead?
+//
+// In contrast for this implementation:
+// q.Push(A) === B		vs.	q.Pop(B) === A
+// q.Push(A,B) == [C,D]		vs.	q.Pop(C,D) == [A,B]
+// q.Push(A,B) == [C,D]		vs.	q.Pop(C) === A; q.Pop(D) === B
+// q.Push(A)===C; q.Push(B)===D	vs.	q.Pop(C,D) == [A,B]
+// So you know what comes out by what you have put in.
+// Completely different to the "naive" case.
+// (Alternatively we could not support multiple arguments.  But why?)
 class Q
   {
   constructor() { this._i = []; this._o = []; this._single = single_run(_ => this._Step()) }
@@ -704,9 +741,10 @@ class Q
   Pop(...d)	{ return this.Proc(this._o, d) }
   Proc(a,d, prio)
     {
-      const p = d.map(m => new Promise((ok,ko) => prio ? a.unshift([m,ok,ko]) : a.push([m, ok, ko])));
+      if (!d.length) d=[void 0];	// q.Pop() is same as q.Pop(void 0)
+      const p = d.map(m => new Promise((ok,ko) => prio ? a.unshift([m,ok,ko]) : a.push([m,ok,ko])));
       this._single().catch(DONOTHING);
-      //D('Q.Proc', a, d, p);
+      D('Q', a === this._i ? 'push' : 'pop', a.length, prio||0, d, p);
       return p.length==1 ? p[0] : Promise.all(p);
     }
   Clear()
@@ -884,6 +922,14 @@ class Keeper
     }
   }
 
+// Cookie('name')
+// Cookie({name, path, samesite, secure, httponly, domain, expire})
+// .$	= value;	// to set
+// .$	= void 0;	// to remove
+// .del()		// to remove
+//
+// .on() is triggered if Cookie value exists or changes
+// .on() is also triggered if Cookie value is not matching
 class Cookie extends OnOff
   {
   constructor(name, path, samesite)
