@@ -106,6 +106,7 @@ class Cancelled
   };
 
 // Temporarily cache something expensive (expires at the next loop)
+// This should work with global function and within classes, as the function is wrapped accordingly
 function tmpcache(fn, ...a)
 {
   var ret;
@@ -481,8 +482,11 @@ class _E extends _E0
 
   get $x()		{ return this._pos().x }
   get $y()		{ return this._pos().y }
-  get $w()		{ return this.$.offsetWidth }
-  get $h()		{ return this.$.offsetHeight }
+  get $w()		{ return this._e.offsetWidth }
+  get $h()		{ return this._e.offsetHeight }
+  get $xy()		{ const p = this._pos(); return [ p.x, p.y ] }
+  get $xywh()		{ const p = this._pos(); return [ p.x, p.y, this._e.offsetWidth, this._e.offsetHeight ] }
+  get $XYWH()		{ const p = this._pos(); p.w = this._e.offsetWidth; p.h = this._e.offsetHeight; return p }
   _pos = tmpcache(function ()
     {
       var o = this._e;
@@ -493,30 +497,32 @@ class _E extends _E0
           x	+= o.offsetLeft;
           y	+= o.offsetTop;
         }
-      return { x:x, y:y }
+      return { x, y }
     })
 
 // setting is NOT supported due to caching
-//  E(e)			{ return this.e(e).$ }
-//  set $(e)		{ this._e = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
-//  e(e)			{ if (e) this.$ = e; return this }
+//E(e)			{ return this.e(e).$ }
+//set $(e)		{ this._e = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
+//e(e)			{ if (e) this._e = e; return this }
 
-  get $text()		{ return this.$.textContent }		// innerText causes reflow
-  set $text(s)		{ return this.$.textContent = s }	// innerText has bad siedeffects on IE<=11
-  get $value()		{ return this.$.value }
-  set $value(v)		{ this.$.value = v }
-  get $src()		{ return this.$.src }
-  set $src(u)		{ this.$.src = u }
-  get $alt()		{ return this.$.alt }
-  set $alt(u)		{ this.$.alt = u }
-  get $checked()	{ return this.$.checked }
-  set $checked(b)	{ this.$.checked = !!b }
-  get $disabled()	{ return this.$.disabled }
-  set $disabled(b)	{ this.$.disabled = !!b }
-  get $class()		{ return this.$.classList }
+  get $text()		{ return this._e.textContent }	// innerText causes reflow
+  set $text(s)		{ return this._e.textContent = s }	// innerText has bad siedeffects on IE<=11
+  get $align()		{ return this._e.align }
+  set $align(a)		{ this._e.align = a }
+  get $value()		{ return this._e.value }
+  set $value(v)		{ this._e.value = v }
+  get $src()		{ return this._e.src }
+  set $src(u)		{ this._e.src = u }
+  get $alt()		{ return this._e.alt }
+  set $alt(u)		{ this._e.alt = u }
+  get $checked()	{ return this._e.checked }
+  set $checked(b)	{ this._e.checked = !!b }
+  get $disabled()	{ return this._e.disabled }
+  set $disabled(b)	{ this._e.disabled = !!b }
+  get $class()		{ return this._e.classList }
   // XXX TODO XXX missing: .$class = [list] so this is idempotent: .$class = .$class
   // .$class = {classname:true, classname2:false}
-  set $class(o)		{ for (const a in o) this.$.classList.toggle(a, o[a]); return this }
+  set $class(o)		{ for (const a in o) this._e.classList.toggle(a, o[a]); return this }
 
   // Only create Style-class if it is really needed
   get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
@@ -546,7 +552,7 @@ class _E extends _E0
   alt(...s)		{ this.$alt = s.join(' '); return this }
   checked(b)		{ this.$checked = b; return this }
   disabled(b)		{ this.$disabled = b; return this }
-  align(a)		{ this.$.align = a; return this }
+  align(a)		{ this.$align = a; return this }
   center()		{ return this.align('center') }
   justify()		{ return this.align('justify') }
   left()		{ return this.align('left') }
@@ -575,19 +581,22 @@ class _E extends _E0
   get SPAN()		{ return this._MK('span') }
   get CHECKBOX()	{ return this._MK('input', {type:'checkbox'}) }
   get INPUT()		{ return this._MK('input', {type:'text'}) }
+  get RADIO()		{ return this._MK('input', {type:'radio'}) }
   get TEXTAREA()	{ return this._MK('textarea') }
   get TABLE()		{ return this._MK('table') }
   get BUTTON()		{ return this._MK('button') }
   get SELECT()		{ return this._MK('select') }
   get OPTION()		{ return this._MK('option') }
+  get FORM()		{ return this._MK('form') }
+  get LABEL()		{ return this._MK('label') }
 
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
 
-  get $options()	{ return (function *() { for (var a of this.$.selectedOptions) yield E(a) }).call(this) }
+  get $options()	{ return (function *() { for (var a of this._e.selectedOptions) yield E(a) }).call(this) }
   get $option()		{ return E(this.$?.selectedOptions[0]) }
 
-  selected(state)	{ if (state != void 0) this.$.selected = !!state; return this }
+  selected(state)	{ if (state != void 0) this._e.selected = !!state; return this }
 
   updater(fn, ...a)	{ this._upd = [fn,a]; return this }
   UPDATE(...a)		{ return this._upd[0](this, ...this._upd[1], ...a) }
@@ -598,11 +607,13 @@ class _E extends _E0
   on(...a)		{ this.ON(...a); return this }
 
   target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
-  href(link)		{ return this.attr({href:link}) }
+  href(href)		{ return this.attr({href}) }
+  id(id)		{ return this.attr({id}) }
+  name(name)		{ return this.attr({name}) }
   attr(a)		{ if (a) for (const b in a) for (const e of this._E) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
   style(a)		{ if (a) for (const b in a) for (const e of this._E) e.style[b] = a[b]; return this }
-  prepend(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.prepend(b); return this }
-  add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this.$.appendChild(b); return this }
+  prepend(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.prepend(b); return this }
+  add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.appendChild(b); return this }
   attach(p)		{ E(p).add(this); return this }
 
   setclass(o)		{ this.$class = o }
@@ -932,41 +943,180 @@ class Keeper
 // .on() is also triggered if Cookie value is not matching
 class Cookie extends OnOff
   {
-  constructor(name, path, samesite)
+  #val
+  #exp
+  #dom
+  #sec
+  #path
+  //#http
+  #same
+  #name
+
+  constructor(name)
     {
       super();
-      this.name	= name;
-      this.path	= path || '/';
-      this.val	= void 0;
-      this.same	= samesite || 'Lax';
+      const opt	= isObject(name) ? name : { name };
+      this.#name	= opt.name || 'cookie';
+      this.$path	= opt.path || '/';
+      this.$samesite	= opt.samesite || 'Lax';	// WTF?  It DOES NOT DEFAULT to Lax as MDN says!
+      // https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
+      // Cookies created via JavaScript cannot include the HttpOnly flag.
+      // Why?  Shouln't there be a way to allow overwriting certain such Cookies by JS?
+      //this.$httponly	= opt.httponly;
+      this.$domain	= opt.domain;
+      this.$expire	= opt.expire;
+      this.$secure	= opt.secure || location.protocol == 'https:';
 
+      // get the current value
+      this.#val		= void 0;
       const x = `${name}=`;
       for (var c of document.cookie.split(';'))
         {
           if (c.startsWith(' ')) c = c.substr(1);
           if (c.startsWith(x))
             {
-              this.val	= UD(c.substr(x.length));
+              this.#val	= UD(c.substr(x.length));
               this.trigger();
               break;
             }
         }
     }
-  get $()	{ return this.val }
-  set $(v)	{ return this._put(v, UE(v)) }
-  del()		{ return this._put(void 0, '; expires=Thu, 01 Jan 1970 00:00:00 UTC') }
-  trigger(...a)	{ super.trigger(...a, this.val); return this }
-  _put(v, c)
+  get $name()	{ return this.#name }
+  get $secure()	{ return this.#sec }
+  set $secure(d) { this.#sec = !!d }
+  get $path()	{ return this.#path }
+  set $path(d)	{ this.#path = d }
+  get $samesite() { return this.#same }
+  set $samesite(d) { this.#same = d && UE(d) }		// XXX TODO XXX check parameters for correctness (UE as workaround)
+  //get $httponly() { return this.#http }
+  //set $httponly(d) { this.#http = !!d }
+  get $domain()	{ return this.#dom }
+  set $domain(d) { this.#dom = d && UE(d) }		// XXX TODO XXX check domain for correctness (UE as workaround)
+  get $expire()	{ return this.#exp }
+  set $expire(d) { this.#exp = d && new Date(d).toUTCString() }
+
+  get $()	{ return this.#val }
+  set $(v)	{ return this._put(v) }
+
+  set $cmp(v)	{ if (this.#val !== v) this.trigger(v) }
+
+  del()		{ return this._put() }
+  trigger(...a)	{ super.trigger(...a, this.#val); return this }
+  _put(v)
     {
-      c = `${this.name}=${c}; path=${this.path}; SameSite=${this.same}`;	// SameSite WTF?!?
+      let c	= '';
+      const d	= this.#dom ? `; Domain=${this.#dom}` : '';
+      let e	= 'Thu, 01 Jan 1970 00:00:00 UTC';
+      //const h	= this.#http ? `; HttpOnly` : '';
+      const n	= this.#sec ? `; Secure` : '';
+      const p	= this.#path === void 0 ? '' :  `; Path=${UE(this.#path)}`;
+      const s	= this.#same ? `; SameSite=${this.#same}` : '';
+      if (v !== void 0)
+        {
+          if (v === this.#val)
+            return this;	// nothing changed, no need to trigger
+
+          c	= UE(v);
+          e	= this.#exp || '';
+        }
+      if (e)
+        e	= `; Expires=${e}`;
+
+      c = `${this.name}=${c}${d}${e}${n}${p}${s}`;
       D('Cookie', c);
 
-      this.val		= v;
-      document.cookie	= c;
+      this.#val		= v;
+      document.cookie	= c;		// SameSite WTF?!?  Without SameSite parameter this does not work as excepted?!?
 
       return this.trigger();
     }
+
+/*
+  // Create a Cookie-Switch class:
+  // SWITCH('name', callback)
+  // SWITCH({name,class,set,del})
+  // This creates two hidden checkboxes with the given name and labels.
+  // Left is ON/Save which has 3 state classes: green yellow red
+  // Right is Delete which has 2 state class:   grey black
+  SWITCH(opt)
+    {
+      const c = sel.BUTTON.text('set').on('click', _ => set(this));
+      const d = sel.BUTTON.text('del').on('click', _ => del(this));
+      this.on(a =>
+        {
+          d.disabled(!a);
+          c.$class = { CookieButtonGreen:!!a, CookieButtonRed:!a };
+          d.$class = { CookieButtonGrey:!a }
+        });
+      return this.trigger();
+    }
+*/
   };
+
+// Generic switch class for radio like switches plus some CSS to layout
+// new Switch(parent, 'NAME', 'CLASS').add('first').add('second').on(callback).trigger()
+// new Switch(parent).name('NAME').css('CLASS').add(
+// If 'CLASS' is missing, the given NAME is used.
+// If 'NAME' is missing, a unique one is created.
+//
+// Note:
+//
+// The labels set CSS { user-select:none } to prevent acidentally selecting instead of clicking the button.
+// If you do not like that and other automatic things, use .quirks(), then everything must be done with classes.
+//
+// .$			is the current value of the given input
+// .$ = TEXT		re-assign the label contents of the currently checked input
+// .$nr			returns the integer value of the currently checked input value, which is filled by .add() with the number starting by 0
+// .$nr = NR		same as: .nr(NR)
+// .$class		is the CLASS of currently checked input, by default this returns CLASS-on
+// .$class = 'other'	same as: .class(.$nr, 'OTHER')
+//
+// .quirks()		disable quirks
+// .quirks(true)	(default) enable quirks, that is, set some default CSS attributes directly
+// .css('CLASS')	changes the CSS class
+// .name('NAME')	changes the NAME
+// .on()		(see OnOff) is called if something changes
+//
+// .add(TEXT, cb, args)	adds a button and run CB with args when the button is selected.  `this` is the Switch class
+// .ADD(TEXT, cb, args)	same, but returning the generated number of the given button
+//
+// .select(nr)		select the given button.  This is the same as user clicking the button
+// .class(nr, CLASS)	temporarilt change the class of the given button - this reverts to default on any interaction
+// .rm(nr)		remove the given button
+// .set(nr, TEXT)	change the label contents
+//
+// A switch is a hidden {display:none; position:absolute} named radiobutton with a label which can be styled as you like.
+// The CSS class can be used to style the <label> elements.
+// As ":has()" and parent selectors are not available in CSS yet and I do not like to create 'for'-attributes,
+// all the classes are programattically assigned by JavaScript by adding a certain suffix:
+//
+// CLASS-off		if the button is not selected
+// CLASS-on		if the button is selected
+//
+// To represent N-state on a button, you can use .class() or .$class.
+//
+// Initially the Switch has no buttons, so you must .add() them.
+/*
+class Switch extends OnOff
+  {
+    #name
+    #class
+
+    constructor(parent, name, klass)
+      {
+        this.#el	= parent ? E(parent) : E.FORM;
+        this.#name	= name || _UniqueName();
+        this.#class	= klass || name;
+      }
+    set $class(c)	{ this.class(this.$nr, c) }
+    set $nr(nr)		{ this.nr(nr) }
+
+    add(text, cb, ..args)
+      {
+        
+      }
+  };
+*/
 
 const UrlState = (x => x())(function(){
   var reg;
@@ -1048,11 +1198,21 @@ const UrlState = (x => x())(function(){
 
       keeper = new Keeper(set, change);
     }
+  function buttons(name, el, set, del)
+    {
+      name	= name || 'state';
+      el	= E(el || name);
+      const c	= el.BUTTON.text(set || 'set').on('click', _ => UrlState.set());
+      const d	= el.BUTTON.text(del || 'del').on('click', _ => UrlState.del());
+      run.COOKIE(name).on(a => { d.disabled(!a); c.$class = { green8:!!a, red8:!a }; d.$class = { grey8:!a } }).trigger();
+      return this;
+    }
 
   init();
   function run(id) { return reg[id] || (reg[id] = new Keep(keeper, id)) }
   run.COOKIE	= function(name) { var c = new Cookie(name); init(c); return c }
   run.cookie	= function(name) { this.COOKIE(name); return this }
+  run.buttons	= buttons;
   run.set	= function () { if (cookie) cookie.$ = state(); return this }
   run.del	= function () { if (cookie) cookie.del(); return this }
   return run;
