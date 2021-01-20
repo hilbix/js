@@ -460,7 +460,7 @@ class _E0
   clr()			{ let a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this; }
 
   *[Symbol.iterator]()	{ for (const e of this._E) yield e }
-  *MAP(fn, ...a)	{ const r=[]; for (const e of this._E) yield fn(e, ...a) }
+  *MAP(fn, ...a)	{ for (const e of this._E) yield fn(e, ...a) }
 
   // E().ALL(selector) queries on the document
   // but: E().clr() does NOT clear the document!
@@ -569,6 +569,7 @@ class _E extends _E0
   nobr()		{ return this.ws('nowrap') }
   pre()			{ return this.ws('pre') }
   get DIV()		{ return this._MK('div') }
+  get PRE()		{ return this._MK('pre') }
   get A()		{ return this._MK('a') }
   get IMG()		{ return this._MK('img') }
   get TR()		{ return this._MK('tr') }
@@ -613,7 +614,7 @@ class _E extends _E0
   attr(a)		{ if (a) for (const b in a) for (const e of this._E) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
   style(a)		{ if (a) for (const b in a) for (const e of this._E) e.style[b] = a[b]; return this }
   prepend(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.prepend(b); return this }
-  add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.appendChild(b); return this }
+  add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.append(b); return this }
   attach(p)		{ E(p).add(this); return this }
 
   setclass(o)		{ this.$class = o }
