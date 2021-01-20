@@ -623,6 +623,11 @@ class _E extends _E0
   after(...c)		{ let n=this._e; if (n) for (const a of c) for (const b of E(a)) { n.after(b); n=b }; return this }
   attach(p)		{ E(p).add(this); return this }
 
+  get FIRST()		{ return E0(this._e?.firstChild) }
+  get LAST()		{ return E0(this._e?.lastChild) }
+  get PREV()		{ return E0(this._e?.previousSibling) }
+  get NEXT()		{ return E0(this._e?.nextSibling) }
+
   setclass(o)		{ this.$class = o }
   addclass(...c)	{ this.$class.add(...c); return this }
   rmclass(...c)		{ this.$class.remove(...c); return this }
@@ -647,6 +652,7 @@ class _E extends _E0
 //	Note: all should be Nodes, else strange things might happen.
 //	(For performance reason this is not enforced.)
 // E([e]) === E(e) and E([a,b]) === E(a,b)
+const E0 = _ => _ ? E(_) : void 0;	// or null?
 const E = (function(){
   const weak_refs = new WeakMap();
 
