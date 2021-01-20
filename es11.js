@@ -613,7 +613,7 @@ class _E extends _E0
   name(name)		{ return this.attr({name}) }
   attr(a)		{ if (a) for (const b in a) for (const e of this._E) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
   style(a)		{ if (a) for (const b in a) for (const e of this._E) e.style[b] = a[b]; return this }
-  prepend(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.prepend(b); return this }
+  prep(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.prepend(b); return this }
   add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.append(b); return this }
   attach(p)		{ E(p).add(this); return this }
 
