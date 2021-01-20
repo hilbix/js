@@ -449,11 +449,13 @@ const Styles = (props =>
     zIndex:			2,
   });
 
+const FRAGMENT = () => document.createDocumentFragment();
+
 // This is an element wrapper (not really like jQuery).
 // var input = E().DIV.text('hello world ').INPUT;
 class _E0
   {
-  constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0] }
+  constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0] || FRAGMENT() }
   get $()		{ return this._e; }
 
   rm()			{ for (const e of this._E) e.remove(); return this }
@@ -613,8 +615,12 @@ class _E extends _E0
   name(name)		{ return this.attr({name}) }
   attr(a)		{ if (a) for (const b in a) for (const e of this._E) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
   style(a)		{ if (a) for (const b in a) for (const e of this._E) e.style[b] = a[b]; return this }
-  prep(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.prepend(b); return this }
-  add(...c)		{ if (this.$) for (const a of c) for (const b of E(a)) this._e.append(b); return this }
+  // prepend/append to parent
+  prep(...c)		{ const n=this._e, f=FRAGMENT(); if (n) for (const a of c) for (const b of E(a)) f.append(b); n.prepend(f); return this }
+  add(...c)		{ const n=this._e; if (n) for (const a of c) for (const b of E(a)) n.append(b); return this }
+  // prepend/append relative to current
+  before(...c)		{ const n=this._e; if (n) for (const a of c) for (const b of E(a)) n.before(b); return this }
+  after(...c)		{ let n=this._e; if (n) for (const a of c) for (const b of E(a)) { n.after(b); n=b }; return this }
   attach(p)		{ E(p).add(this); return this }
 
   setclass(o)		{ this.$class = o }
