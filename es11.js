@@ -507,6 +507,7 @@ class _E extends _E0
 //set $(e)		{ this._e = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
 //e(e)			{ if (e) this._e = e; return this }
 
+  get $tag()		{ return this._e.nodeName }	// DIV, SPAN, etc.
   get $text()		{ return this._e.textContent }	// innerText causes reflow
   set $text(s)		{ return this._e.textContent = s }	// innerText has bad siedeffects on IE<=11
   get $align()		{ return this._e.align }
@@ -570,6 +571,8 @@ class _E extends _E0
   ws(x)			{ return this.style({ whiteSpace:x }) }
   nobr()		{ return this.ws('nowrap') }
   pre()			{ return this.ws('pre') }
+
+  // All TAGs
   get DIV()		{ return this._MK('div') }
   get PRE()		{ return this._MK('pre') }
   get A()		{ return this._MK('a') }
