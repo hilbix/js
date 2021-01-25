@@ -70,8 +70,10 @@ const PC = (fn,self,...a) => PR.then(() => _FPA.call(fn, self, a));
 
 const fromJ	= o => JSON.parse(o);
 const toJ	= o => JSON.stringify(o);
-const Sleep	= ms => r => new Promise(ok => setTimeout(ok, ms, r))
-const Sleeperr	= ms => r => new Promise((ok,ko) => setTimeout(ko, ms, r))
+const SleeP	= (ms,v) => new Promise(ok => setTimeout(ok, ms, v));
+const SleEp	= (ms,e) => new Promise((ok,ko) => setTimeout(ok, ms, e));
+const sleepFn	= ms => r => SleeP(ms, r);
+const sleepErr	= ms => e => SleEp(ms, e);
 
 
 // fetch() promises
