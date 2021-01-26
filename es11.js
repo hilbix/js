@@ -489,6 +489,7 @@ class _E extends _E0
   get $w()		{ return this._e.offsetWidth }
   get $h()		{ return this._e.offsetHeight }
   get $xy()		{ const p = this._pos(); return [ p.x, p.y ] }
+  get $wh()		{ return [ this._e.offsetWidth, this._e.offsetHeight ] }
   get $xywh()		{ const p = this._pos(); return [ p.x, p.y, this._e.offsetWidth, this._e.offsetHeight ] }
   get $XYWH()		{ const p = this._pos(); p.w = this._e.offsetWidth; p.h = this._e.offsetHeight; return p }
   _pos = tmpcache(function ()
