@@ -488,10 +488,21 @@ class _E extends _E0
   get $y()		{ return this._pos().y }
   get $w()		{ return this._e.offsetWidth }
   get $h()		{ return this._e.offsetHeight }
+  x(x)			{ return this.style({left:`${x}px`}) }
+  y(y)			{ return this.style({top:`${y}px`}) }
+  w(_)			{ const w=`${_}px`; return this.style({width:w,maxWidth:w}) }
+  h(_)			{ const h=`${_}px`; return this.style({height:h,maxHeight:h}) }
+  set $x(_)		{ this.x(_) }
+  set $y(_)		{ this.y(_) }
+  set $w(_)		{ this.w(_) }
+  set $h(_)		{ this.h(_) }
   get $xy()		{ const p = this._pos(); return [ p.x, p.y ] }
   get $wh()		{ return [ this._e.offsetWidth, this._e.offsetHeight ] }
   get $xywh()		{ const p = this._pos(); return [ p.x, p.y, this._e.offsetWidth, this._e.offsetHeight ] }
   get $XYWH()		{ const p = this._pos(); p.w = this._e.offsetWidth; p.h = this._e.offsetHeight; return p }
+  get $rb()		{ const p = this._pos(); return [ p.x+this._e.offsetWidth, p.y+this._e.offsetHeight ] }
+  get $ltrb()		{ const p = this._pos(); return [ p.x, p.y, p.x+this._e.offsetWidth, p.y+this._e.offsetHeight ] }
+  get $LTRB()		{ const p = this._pos(); return { left:p.x, top:p.y, right:p.x+this._e.offsetWidth, b:p.y+this._e.offsetHeight } }
   _pos = tmpcache(function ()
     {
       var o = this._e;
