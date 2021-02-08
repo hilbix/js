@@ -1,4 +1,28 @@
 'use strict';	// this is for ES11 aka ES2020
+
+// TODO:
+//
+// Proper debug sealing.  Wrong usage must be reported via throw.
+//
+//	Object.seal() and Object.freeze() fail for debugging,
+//	as they silently protect the object or class.
+//	But I want prominent, best catastrophic errors to show up.
+//
+//	Hence we need to use Proxy()s while debugging,
+//	replacing them with normal Object.freeze() or Object.seal()
+//	in production (as this speeds things up in most browers).
+//
+// WeakMap possibly does not work on DOM objects at all.
+//
+//	WTF?  How to implement this properly then?
+//	I thought it was meant for exactly that case!
+//
+// Implement private fields (when they become available?)
+//
+//	Currently stuidly emulated with _
+//	Can we use WeakMap()[this] instead?  Easily?
+//	(I did so in some other universe already.)
+
 // This Works is placed under the terms of the Copyright Less License,
 // see file COPYRIGHT.CLL.  USE AT OWN RISK, ABSOLUTELY NO WARRANTY.
 
