@@ -862,23 +862,22 @@ const arrayCmpShallow = (a,b) =>
 // Usable Crypto wrappers to the WTF implemented in Browsers
 //
 
-// WTF https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
-async function SHA256hex(message)
-{
-  return await SHA256u8hex(new TextEncoder().encode(message));
-}
 // u8 can be Uint8Array or ArrayBuffer/ArrayBufferView
 // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array
-async function SHA256u8hex(u8)
-{
-  return Array
-    .from(new Uint8Array(await crypto.subtle.digest('SHA-256', u8)), b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+const SHA256u8hex = async (u8) => window.crypto?.subtle
+    ? Array
+      .from(new Uint8Array(await crypto.subtle.digest('SHA-256', u8)), b => b.toString(16).padStart(2, '0'))
+      .join('')
+    : THROW('window.crypto.subtle not available');
+
+// WTF https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+const SHA256hex = (message) => SHA256u8hex(new TextEncoder().encode(message));
+
 SHA256hex('hw')
 .then(_ => '91660cd41bd4fe159351ab036b7ca3e998602a9fec70b362ca11e0177fe706e3' == _)
-.then(_ => _ ? _ : THROW('SHA256 error'))
+.then(_ => _ ? _ : THROW('SHA256 testvalue failed'))
+.then(_ => console.log('SHA256 ok'), _ => console.log('SHA256 unavailable', _));
 
 // fn HANDLING DIFFERS from class ON!
 //
