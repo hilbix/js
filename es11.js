@@ -125,6 +125,24 @@ const HD = x => String(x).replace(/&#(\d)+;/g, (s,c) => String.fromCharChode(c))
 const HU = x => HE(UE(x));		// special short form
 const JU = x => UE(toJ(x));		// very special short form
 
+const es11WeakRef = (() =>
+  {
+    try {
+      new WeakRef({});
+      CONSOLE('es11WeakRef supported');
+      return WeakRef;
+    } catch {
+      CONSOLE('es11WeakRefs faked');
+      // Not a working WeakRef mixin
+      // (This cannot be implemented with WeakMap)
+      return class
+        {
+        constructor(o) { this._o = o }
+        deref() { return this._o }
+        }
+    }
+  })();
+
 // Temporarily cache something expensive (expires at the next loop)
 // This is mainly for class methods like getters as it distinguishes on 'this'.
 // However it should work with global function, too, as here 'this' is window.
@@ -208,21 +226,6 @@ const single_run = (fn, ...a) =>
           loop();
       })
   }
-
-try {
-  new WeakRef({});
-  const es11WeakRef = WeakRef;
-  CONSOLE('es11WeakRef supported');
-} catch {
-  CONSOLE('es11WeakRefs faked');
-  // Not a working WeakRef mixin
-  // (This cannot be implemented with WeakMap)
-  const es11WeakRef = class
-    {
-    constructor(o) { this._o = o }
-    deref() { return this._o }
-    }
-}
 
 // ON-Event class (in the capture phase by default)
 // If the handling returns trueish, processing of the event stops.
