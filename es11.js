@@ -11,12 +11,12 @@
 
 // <script src="es11.js" data-debug></script>
 // data-debug enables debugging
-var DEBUGGING = document.currentScript?.dataset?.debug;		// you can change this later
+let DEBUGGING = document.currentScript?.dataset?.debug;		// you can change this later
 
 const _FPA = Function.prototype.apply;
 const _FPC = Function.prototype.call;
 const DONOTHING = function(){}					// The "do nothing" DUMMY function
-let CONSOLE = function (...a) { console.log(...a) }		// returns void 0
+let CONSOLE = (...a) => { console.log(...a) };			// returns void 0 for sure (and changeable)
 
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
@@ -94,57 +94,78 @@ const GetJSON	= u => Json(Get(u))
 // Escape URI and (only the problematic) HTML entities
 // As there are gazillions of named HTML entities (and counting)
 // we do NOT want to support them.  Never.  Sorry.
-function UE(x) { return encodeURIComponent(x) }	// WTF? I almost broke a finger typing this!
-function UD(x) { return decodeURIComponent(x) }	// WTF? BTW: Out of 666 characters long names?
-function HE(x) { return String(x).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`) }
-function HD(x) { return String(x).replace(/&#(\d)+;/g, (s,c) => String.fromCharChode(c)) }
-function HU(x) { return HE(UE(x)) }	// special short form
-function JU(x) { return UE(toJ(x)) }	// very special short form
+const UE = x => encodeURIComponent(x);	// WTF? I almost broke a finger typing this!
+const UD = x => decodeURIComponent(x);	// WTF? BTW: Out of 666 characters long names?
+const HE = x => String(x).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
+const HD = x => String(x).replace(/&#(\d)+;/g, (s,c) => String.fromCharChode(c));
+const HU = x => HE(UE(x));		// special short form
+const JU = x => UE(toJ(x));		// very special short form
+
+// Temporarily cache something expensive (expires at the next loop)
+// This is mainly for class methods like getters as it distinguishes on 'this'.
+// However it should work with global function, too, as here 'this' is window.
+const tmpcache = (fn,...a) =>			// use a real function here to provide 'this'
+{
+  let ret;
+  return function ()				// we cannot have args here, as this would change the outcome
+    {						// must be function as we need 'this' for caching
+      if (ret)
+        {
+          if (this in ret)
+            return ret[this];			// cached value
+        }
+      else
+        {
+          ret	= new WeakMap();		// temporary cache
+          setTimeout(_ => ret = void 0);	// expire at next loop
+        }
+      ret[this]	= void 0;	 		// avoid recursion
+      return ret[this] = fn.apply(this, a);	// cache real value (from this cycle)
+    }
+};
 
 class Cancelled
   {
-  constructor(...a) { this._a = a; }
+  constructor(...a) { this._a = a }
   get cancelled() { return this._a }
   };
 
-// Temporarily cache something expensive (expires at the next loop)
-// This should work with global function and within classes, as the function is wrapped accordingly
-function tmpcache(fn, ...a)
-{
-  var ret;
-  return function ()
-    {
-      if (ret && this in ret) return ret[this];
-      if (!ret)
-        {
-          ret	= new WeakMap();
-          setTimeout(_ => ret = void 0)
-        }
-      ret[this]	= void 0;	// avoid recursion
-      return ret[this] = fn.apply(this, a);
-    }
-}
-
+// Run something a single time in backround where only the last invocation is cached.
+// Usage is to update something expensive, such that if multiple updates come in while it is updated, those are skipped except of the latest one.
+//
+// single_run(fn,a) returns a function which, when invoked, starts the given fn asynchronously with the given args, such that it never runs twice.
+// If the fn still runs further invocations are cached and run afterwards.  But only the last invocation survives, all othere throw a Cacnelled exception.
+//
+// Example:
+//
 // r = single_run(fn, a);
-// r(b).then(retval => {}, err => { if (err.cancelled) was_cancelled(err); else other_error(err); })
-// - for now single_run() returns just a function to call and not a class
-// - r(b) asynchronosuly runs fn(a,b) if fn() not already runs
-// - if fn(a,b) still runs, r(x) will invoke fn(a,x) as soon, as fn(a,b) finishes
-// - Only the very last call to r(x) is remembered, all intermediate other calls are Cancelled()!
-// - r() returns a Promise which resolves to the result (or rejected if Cancelled()/errors)
-//   You can check if (e.chancelled) // function was cancelled
+// r(b).then(
+//           val => process(val)
+//           ,
+//           err => err.cancelled ? was_cancelled(err) : other_error(err)
+//          )
+//
+// - single_run(fn,a) returns a function (here called r)
+//   In future this might change to a callable class which encapsulates it all.
+// - r(b) returns a Promise which resolves to the return value (or error) of fn(a,b)
+// - Until this Promise is resolved, further calls to r(x) are delayed until the Promise resolves
+// - If another r(y) arrives while r(x) is waiting, r(x) is cancelled with the Cancelled() class (which does not derive from Error by purpose).
+//   r(y) replaces r(x) this way
+// - On Cancelled() the .cancelled property returns the (truthy) array of the given arguments which replaced the r(x) (the [a,y])
+//   Hence you can test with something like .catch(e => { if (e.cancelled) ..
+//   This also works with try { await r(y) } catch (e)  { if (e.cancelled) ..
 const single_run = (fn, ...a) =>
   {
-    var invoke, running;
+    let invoke, running;
 
-    async function run(...a)
+    const run = async (...a) =>
       {
         //D('SR', 'wait', a);
         await void 0;		// run asynchrounously
         //D('SR', 'run', a);
         return fn(...a);	// in case it is a Promise
       };
-    function loop()
+    const loop = () =>
       {
         running = invoke;
         invoke = void 0;
@@ -154,10 +175,11 @@ const single_run = (fn, ...a) =>
       }
     return (...b) => new Promise((ok, ko) =>
       {
+        const was = invoke;
         //D('SR', 'exec', fn, a, invoke);
-        if (invoke)
-          invoke[3](new Cancelled(a,b));
         invoke = [a,b,ok,ko];
+        if (was)
+          was[3](new Cancelled(a,b));
         if (!running)
           loop();
       })
@@ -165,13 +187,13 @@ const single_run = (fn, ...a) =>
 
 try {
   new WeakRef({});
-  var es11WeakRef = WeakRef;
+  const es11WeakRef = WeakRef;
   CONSOLE('es11WeakRef supported');
 } catch {
   CONSOLE('es11WeakRefs faked');
   // Not a working WeakRef mixin
   // (This cannot be implemented with WeakMap)
-  var es11WeakRef = class
+  const es11WeakRef = class
     {
     constructor(o) { this._o = o }
     deref() { return this._o }
@@ -200,7 +222,7 @@ class ON
   handleEvent(ev)
     {
       this.$ = ev;
-      for (var a of this._fn)
+      for (const a of this._fn)
         if (a[0].call(this,ev,...a[1]))
           {
             ev.preventDefault()
@@ -224,9 +246,9 @@ class ON
     {
       const l=this._el;
       this._el=[];
-      for (var a of l)
+      for (const a of l)
         {
-          var o=l.deref();
+          const o=l.deref();
           if (o) o.removeEventListener(this._type, this);
         }
       return this;
@@ -454,7 +476,7 @@ const Styles = (props =>
 const FRAGMENT = () => document.createDocumentFragment();
 
 // This is an element wrapper (not really like jQuery).
-// var input = E().DIV.text('hello world ').INPUT;
+// const input = E().DIV.text('hello world ').INPUT;
 class _E0
   {
   constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0] || FRAGMENT() }
@@ -470,14 +492,15 @@ class _E0
   // but: E().clr() does NOT clear the document!
   ALL(sel)
     {
-      var ret = [];
+      const ret = [];
       for (const e of defArr(this._E, document))
         e.querySelectorAll(sel).forEach(_ => ret.push(_));
       const r = E(ret);
       D('ALL', sel, r);
       return r;
     }
-  }
+  };
+
 class _E extends _E0
   {
   constructor(e)	{ super(e); this._cache = {} }
@@ -505,9 +528,9 @@ class _E extends _E0
   get $LTRB()		{ const p = this._pos(); return { left:p.x, top:p.y, right:p.x+this._e.offsetWidth, b:p.y+this._e.offsetHeight } }
   _pos = tmpcache(function ()
     {
-      var o = this._e;
-      var x = o.offsetLeft;
-      var y = o.offsetTop;
+      let o = this._e;
+      let x = o.offsetLeft;
+      let y = o.offsetTop;
       while (o = o.offsetParent)
         {
           x	+= o.offsetLeft;
@@ -613,7 +636,7 @@ class _E extends _E0
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
 
-  get $options()	{ return (function *() { for (var a of this._e.selectedOptions) yield E(a) }).call(this) }
+  get $options()	{ return (function *() { for (const a of this._e.selectedOptions) yield E(a) }).call(this) }
   get $option()		{ return E(this.$?.selectedOptions[0]) }
 
   selected(state)	{ if (state != void 0) this._e.selected = !!state; return this }
@@ -656,7 +679,7 @@ class _E extends _E0
   run(...a)		{ this.Run(...a); return this }
 
   Loaded()		{ return Promise.all(Array.from(this.MAP(_ => _.decode()))) }
-  }
+  };
 
 // Create a DOM Element (class _E below).
 // To improve usage, this is idempotent, so E(E(x)) === E(x)
@@ -706,7 +729,7 @@ const E = (function(){
           return e;
         }
 
-      var w = weak_refs.get(e);
+      let w = weak_refs.get(e);
       if (w) { w = w.deref(); if (w) return w }	// w is WeakRef
 
 //    D('E',e);
@@ -725,8 +748,8 @@ const T = (...s) => E(document.createTextNode(s.join(' ')));
 // X(['ul', ['li', 'br', 'span'
 const X = (...args) =>
   {
-    var has = new Set();
-    var x=[];
+    const has = new Set();
+    const x=[];
 
     function dom(_)
       {
@@ -790,7 +813,7 @@ class Q
     }
   Clear()
     {
-      var i = this._i;
+      const i = this._i;
 
       this._i = [];
       //D('Q.Clear');
@@ -823,12 +846,12 @@ class Q
 // Helpers: The name says it all
 //
 
-function arrayCmpShallow(a,b)
+const arrayCmpShallow = (a,b) =>
 {
   if (!a || !b || a.length != b.length)
     return false;
 
-  for (var i=a.length; --i>=0; )
+  for (const i=a.length; --i>=0; )
     if (a[i] !== b[i])
       return false;
 
@@ -871,7 +894,7 @@ class OnOff
   on(...a) { this.ON(...a); return this }
   off(...a) { this.OFF(...a); return this }
   ON(fn,...a) { const i = Object(); this._fns[i]=[fn,a]; return i }
-  OFF(...a) { for (var b of a) delete this._fns[b] }
+  OFF(...a) { for (const b of a) delete this._fns[b] }
   trigger(...a)
     {
       for (const [k,v] of Object.entries(this._fns))
@@ -1149,11 +1172,11 @@ class Switch extends OnOff
 */
 
 const UrlState = (x => x())(function(){
-  var reg;
-  var perm;
-  var save;
-  var cookie;
-  var keeper;
+  let reg;
+  let perm;
+  let save;
+  let cookie;
+  let keeper;
 
   function parse(ret, s)
     {
@@ -1161,12 +1184,12 @@ const UrlState = (x => x())(function(){
 
       a.pop();		// remove last element
       a.shift();	// remove first empty element
-      for (var b of a)
+      for (const b of a)
        {
           const i = b.indexOf(':');
           if (i<0) continue;		// ignore crap
           const k	= UD(b.substring(0,i));
-          var v	= UD(b.substring(i+1));
+          let v	= UD(b.substring(i+1));
           try {
             v	= fromJ(v);
           } catch (e) {
@@ -1240,7 +1263,7 @@ const UrlState = (x => x())(function(){
 
   init();
   function run(id) { return reg[id] || (reg[id] = new Keep(keeper, id)) }
-  run.COOKIE	= function(name) { var c = new Cookie(name); init(c); return c }
+  run.COOKIE	= function(name) { const c = new Cookie(name); init(c); return c }
   run.cookie	= function(name) { this.COOKIE(name); return this }
   run.buttons	= buttons;
   run.set	= function () { if (cookie) cookie.$ = state(); return this }
