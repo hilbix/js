@@ -995,20 +995,14 @@ class Keeper
 // .on() is also triggered if Cookie value is not matching
 class Cookie extends OnOff
   {
-  #val
-  #exp
-  #dom
-  #sec
-  #path
-  //#http
-  #same
-  #name
+// There is not enough support for private fields yet (2021-02):
+//  #val; #exp; #dom; #sec; #path; #same; #name; //#http
 
   constructor(name)
     {
       super();
       const opt	= isObject(name) ? name : { name };
-      this.#name	= opt.name || 'cookie';
+      this._name	= opt.name || 'cookie';
       this.$path	= opt.path || '/';
       this.$samesite	= opt.samesite || 'Lax';	// WTF?  It DOES NOT DEFAULT to Lax as MDN says!
       // https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
@@ -1020,56 +1014,56 @@ class Cookie extends OnOff
       this.$secure	= opt.secure || location.protocol == 'https:';
 
       // get the current value
-      this.#val		= void 0;
+      this._val		= void 0;
       const x = `${name}=`;
-      for (var c of document.cookie.split(';'))
+      for (let c of document.cookie.split(';'))
         {
           if (c.startsWith(' ')) c = c.substr(1);
           if (c.startsWith(x))
             {
-              this.#val	= UD(c.substr(x.length));
+              this._val	= UD(c.substr(x.length));
               this.trigger();
               break;
             }
         }
     }
-  get $name()	{ return this.#name }
-  get $secure()	{ return this.#sec }
-  set $secure(d) { this.#sec = !!d }
-  get $path()	{ return this.#path }
-  set $path(d)	{ this.#path = d }
-  get $samesite() { return this.#same }
-  set $samesite(d) { this.#same = d && UE(d) }		// XXX TODO XXX check parameters for correctness (UE as workaround)
-  //get $httponly() { return this.#http }
-  //set $httponly(d) { this.#http = !!d }
-  get $domain()	{ return this.#dom }
-  set $domain(d) { this.#dom = d && UE(d) }		// XXX TODO XXX check domain for correctness (UE as workaround)
-  get $expire()	{ return this.#exp }
-  set $expire(d) { this.#exp = d && new Date(d).toUTCString() }
+  get $name()	{ return this._name }
+  get $secure()	{ return this._sec }
+  set $secure(d) { this._sec = !!d }
+  get $path()	{ return this._path }
+  set $path(d)	{ this._path = d }
+  get $samesite() { return this._same }
+  set $samesite(d) { this._same = d && UE(d) }		// XXX TODO XXX check parameters for correctness (UE as workaround)
+  //get $httponly() { return this._http }
+  //set $httponly(d) { this._http = !!d }
+  get $domain()	{ return this._dom }
+  set $domain(d) { this._dom = d && UE(d) }		// XXX TODO XXX check domain for correctness (UE as workaround)
+  get $expire()	{ return this._exp }
+  set $expire(d) { this._exp = d && new Date(d).toUTCString() }
 
-  get $()	{ return this.#val }
+  get $()	{ return this._val }
   set $(v)	{ return this._put(v) }
 
-  set $cmp(v)	{ if (this.#val !== v) this.trigger(v) }
+  set $cmp(v)	{ if (this._val !== v) this.trigger(v) }
 
   del()		{ return this._put() }
-  trigger(...a)	{ super.trigger(...a, this.#val); return this }
+  trigger(...a)	{ super.trigger(...a, this._val); return this }
   _put(v)
     {
       let c	= '';
-      const d	= this.#dom ? `; Domain=${this.#dom}` : '';
+      const d	= this._dom ? `; Domain=${this._dom}` : '';
       let e	= 'Thu, 01 Jan 1970 00:00:00 UTC';
-      //const h	= this.#http ? `; HttpOnly` : '';
-      const n	= this.#sec ? `; Secure` : '';
-      const p	= this.#path === void 0 ? '' :  `; Path=${UE(this.#path)}`;
-      const s	= this.#same ? `; SameSite=${this.#same}` : '';
+      //const h	= this._http ? `; HttpOnly` : '';
+      const n	= this._sec ? `; Secure` : '';
+      const p	= this._path === void 0 ? '' :  `; Path=${UE(this._path)}`;
+      const s	= this._same ? `; SameSite=${this._same}` : '';
       if (v !== void 0)
         {
-          if (v === this.#val)
+          if (v === this._val)
             return this;	// nothing changed, no need to trigger
 
           c	= UE(v);
-          e	= this.#exp || '';
+          e	= this._exp || '';
         }
       if (e)
         e	= `; Expires=${e}`;
@@ -1077,7 +1071,7 @@ class Cookie extends OnOff
       c = `${this.name}=${c}${d}${e}${n}${p}${s}`;
       D('Cookie', c);
 
-      this.#val		= v;
+      this._val		= v;
       document.cookie	= c;		// SameSite WTF?!?  Without SameSite parameter this does not work as excepted?!?
 
       return this.trigger();
@@ -1151,14 +1145,13 @@ class Cookie extends OnOff
 /*
 class Switch extends OnOff
   {
-    #name
-    #class
+//    #name; #class
 
     constructor(parent, name, klass)
       {
-        this.#el	= parent ? E(parent) : E.FORM;
-        this.#name	= name || _UniqueName();
-        this.#class	= klass || name;
+        this._el	= parent ? E(parent) : E.FORM;
+        this._name	= name || _UniqueName();
+        this._class	= klass || name;
       }
     set $class(c)	{ this.class(this.$nr, c) }
     set $nr(nr)		{ this.nr(nr) }
@@ -1411,21 +1404,21 @@ class LRU		// Clean LRU key/value cache implementation
 // This is weak on the keys passed in via the first array
 class WeakCache
   {
-  #c; #f; #a
+//  #c; #f; #a
 
   constructor(fn, ...args)
     {
-      this.#c	= [ new WeakMap() ];
-      this.#f	= fn || (_ => _);
-      this.#a	= args;
+      this._c	= [ new WeakMap() ];
+      this._f	= fn || (_ => _);
+      this._a	= args;
     }
   get factory()
     {
       return (...args) => GET(args);
     }
-  #map(arr)
+  _map(arr)
     {
-      let map = this.#c;
+      let map = this._c;
       for (const i of arr)
         {
           let w = map[0].get(i);
@@ -1439,13 +1432,13 @@ class WeakCache
     }
   set(arr, val)
     {
-      this.#map(arr)[1] = val;
+      this._map(arr)[1] = val;
       return this;
     }
   GET(arr, filler, ...args)
     {
-      const map = this.#map(arr);
-      return map.length==2 ? map[1] : map[1] = (filler || this.#f)(...(args || this.#a), arr);
+      const map = this._map(arr);
+      return map.length==2 ? map[1] : map[1] = (filler || this._f)(...(args || this._a), arr);
     }
   };
 
