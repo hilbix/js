@@ -502,11 +502,23 @@ const Styles = (props =>
 
 const FRAGMENT = () => document.createDocumentFragment();
 
+// https://hackernoon.com/creating-callable-objects-in-javascript-d21l3te1
+class Callable extends Function
+  {
+  constructor()
+    {
+      super('...args', 'return this._bound._call(...args)');
+      this._bound = this.bind(this);
+      return this._bound;
+    }
+  // _call(...a) { .. } must be implemented in subclass
+  };
+
 // This is an element wrapper (not really like jQuery).
 // const input = E().DIV.text('hello world ').INPUT;
-class _E0
+class _E0 extends Callable
   {
-  constructor(e)	{ this._e = (this._E = e ? mkArr(e) : [])[0] || FRAGMENT() }
+  constructor(e)	{ super(); this._e = (this._E = e ? mkArr(e) : [])[0] || FRAGMENT() }
   get $()		{ return this._e; }
 
   rm()			{ for (const e of this._E) e.remove(); return this }
