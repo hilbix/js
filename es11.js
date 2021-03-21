@@ -673,6 +673,9 @@ class _E extends _E0
   get FORM()		{ return this._MK('form') }
   get LABEL()		{ return this._MK('label') }
 
+  get TT()		{ return this._MK('tt') }
+  get CODE()		{ return this._MK('code') }
+
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
 
