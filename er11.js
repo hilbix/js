@@ -4,7 +4,7 @@
 
 // Minimalistic global error catcher/reporter:
 // <script src="er11.js" data-post="https://error.example.com/errortarget" data-tag="sometag"></script>
-// <script src="er11.js" data-append="element-id"></script>
+// <script src="er11.js" data-append="element-id" data-appendms="20000"></script>
 // <script src="er11.js" data-debug="console-prefix"></script>
 
 // CATCH(fn): calls fn(e,j) on errors, j is a JSON serializable object
@@ -32,16 +32,27 @@ if (document.currentScript.dataset?.debug)
 
 // Append <PRE> to some element: data-append="element-id"
 if (document.currentScript.dataset?.append)
-  (f => f(document.currentScript.dataset.append))(id =>
-    // Actually this is a BUG:
-    // If ID is not available we should throw.
-    // However this would create a loop here,
-    // so we somehow must evade this.
-    CATCH((e,d) => document.getElementById(id)?.append((f=>f(document.createElement('PRE')))(e =>
+  (f => f(document.currentScript.dataset.append, document.currentScript.dataset?.appendms))((id,ms) =>
+    CATCH((e,d) =>
       {
-        e.innerText = Object.keys(d).map(k => `${k}: ${d[k]}`).join('\n')
-        return e;
-      }))));
+        const f = r => (f => f(document.getElementById(id)))(o =>
+//            { console.log('f', o,r,ms); return (
+            o ? o.append(((f => f(document.createElement('PRE')))(l =>
+                {
+                  l.innerText = Object.keys(d).map(k => `${k}: ${d[k]}`).join('\n')
+                  if (ms != 0) setTimeout(() => l.remove(), parseInt(ms) || 33333);
+                  return l;
+                })))
+              : r ? setTimeout(f,r,r-1)
+              : 0
+                // Actually this is a BUG:
+                // If ID is not available we should throw.
+                // However this would create a loop here,
+                // so we somehow must evade this.
+//          )}
+          );
+        setTimeout(f, 0, 100);
+    }));
 
 // POST to some URL as JSON {e:{error-object}, t:tag}: data-post="URL" data-tag="tag"
 if (document.currentScript.dataset?.post)
