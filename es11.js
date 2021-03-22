@@ -522,6 +522,7 @@ class _E0 extends Callable
   get $()		{ return this._e; }
 
   rm()			{ for (const e of this._E) e.remove(); return this }
+  remove()		{ return this.rm() }
   clr()			{ let a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this; }
 
   *[Symbol.iterator]()	{ for (const e of this._E) yield e }
