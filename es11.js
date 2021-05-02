@@ -254,7 +254,9 @@ class ON
       this._fn		= [];
     }
 
-  add(fn, ...a)		{ this._fn.push([fn,a]); return this }
+  add(fn, ...a)		{ return this.add$$(fn,a) }
+  add2(fn, ...a)	{ return this.add$$(function (...a) { fn(this,...a) }, a) }
+  add$$(fn, a)		{ this._fn.push([fn,a]); return this }
 //remove(fn, ...a)	{ this._fn.remove([fn,a]); return this }	does not work this way
 
   handleEvent(ev)
@@ -531,13 +533,31 @@ class _E0 extends Callable
   {
   constructor(e)	{ super(); this._e = (this._E = e ? mkArr(e) : [])[0] || FRAGMENT() }
   get $()		{ return this._e; }
+  get $all()		{ return this._E; }
 
   rm()			{ for (const e of this._E) e.remove(); return this }
   remove()		{ return this.rm() }
-  clr()			{ let a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this; }
+  clr()			{ let a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this }
 
   *[Symbol.iterator]()	{ for (const e of this._E) yield e }
   *MAP(fn, ...a)	{ for (const e of this._E) yield fn(e, ...a) }
+  Run(fn, ...a)		{ return P(fn, this, ...a) }
+  Run$(fn, ...a)	{ return P$$(fn, this, a) }
+  Run$$(fn,a)		{ return P$$(fn, this, a) }
+  run(fn, ...a)		{ for (const e of this._E) fn(e, ...a); return this }
+  run$(fn, ...a)	{ return this.run$$(fn,a) }
+  run$$(fn,a)		{ for (const e of this._E) fn.apply(e, a); return this }
+
+  forEach(...a)		{ return this.run(...a) }
+
+  debug(...a)		{ console.log('debug', ...a, this._E); return this }
+  };
+
+class _E extends _E0
+  {
+  constructor(e)	{ super(e); this._cache = {} }
+
+  get $$()		{ return E(this._e?.parentNode); }
 
   // E().ALL(selector) queries on the document
   // but: E().clr() does NOT clear the document!
@@ -550,13 +570,6 @@ class _E0 extends Callable
       D('ALL', sel, r);
       return r;
     }
-  };
-
-class _E extends _E0
-  {
-  constructor(e)	{ super(e); this._cache = {} }
-
-  get $$()		{ return E(this._e?.parentNode); }
 
   get $x()		{ return this._pos().x }
   get $y()		{ return this._pos().y }
@@ -729,9 +742,6 @@ class _E extends _E0
   replaceclass(old,c)	{ this.$class.replace(old,c); return this }
   toggleclass(...c)	{ for (const a in c) this.$class.toggle(a); return this }
   has_class(c)		{ return this.$class.contains(c) }
-
-  Run(fn, ...a)		{ return PC(fn, this, ...a) }
-  run(...a)		{ this.Run(...a); return this }
 
   Loaded()		{ return Promise.all(Array.from(this.MAP(_ => _.decode()))) }
   };
