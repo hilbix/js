@@ -32,6 +32,11 @@
 // Starting with $ are getter/setter with just $ is what you expect most (the wrapped object, etc.)
 // mixedCaps or ALLCAPS or functions with _ in the name or ending on it return anything.
 // Starting with _ is private, the first _ is skipped to apply the rules above.
+//
+// If something takes a function as argument, the argument list usually ends on (fn, ...args):
+// - This then calls the function as              fn(e, ...args)
+// - If name ends on $  the call becomes          fn.call(e, ...args)
+// - If name ends on $$ it becomes (fn, args) and fn.apply(e, arg)
 
 // <script src="es11.js" data-debug></script>
 // data-debug enables debugging
@@ -45,8 +50,11 @@ let CONSOLE = (...a) => { console.log(...a) };			// returns void 0 for sure (and
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
 const C = (fn,...a) => function (...b) { return fn(...a,...b) }	// Curry (allows to bind this)
-const CA = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);	// Curry Apply (with self)
-const CC = (fn,self,...a) => CA(fn,self,a);			// Curry Call (with self)
+const C$ = (fn,self,...a) => C$$(fn,self,a);			// Curry Call (with self)
+const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);	// Curry Apply (with self)
+
+const CA = C$$, CC = C$;	// deprecated
+
 //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
 const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
 const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
@@ -90,7 +98,10 @@ const PR = Promise.resolve();	// PRomise
 const PE = Promise.reject();	// PromisErr
 PE.catch(DONOTHING);		// shutup "Uncaught in Promise" due to PE
 const P = (fn,...a) => PR.then(() => fn(...a));
-const PC = (fn,self,...a) => PR.then(() => _FPA.call(fn, self, a));
+const P$ = (fn,self,...a) => P$$(fn,self,a);
+const P$$ = (fn,self,a) => PR.then(() => _FPA.call(fn, self, a));
+
+const PC = P$;	// deprecated
 
 const fromJ	= o => JSON.parse(o);
 const toJ	= o => JSON.stringify(o);
@@ -228,7 +239,7 @@ const single_run = (fn, ...a) =>
   }
 
 // ON-Event class (in the capture phase by default)
-// If the handling returns trueish, processing of the event stops.
+// If the handling returns trueish, processing of the event stops (this is the exact opposite of old DOM).
 // `this` is set to the ON-instance within the function (if not bound elsewhere)
 // calls fn(event, ...a)	for: ON('event').add(fn, ...a).attach(E(element))
 // calls fn(event, elem, ...a)	for: elem = E(element).on(fn, ...a)
