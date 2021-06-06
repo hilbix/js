@@ -570,6 +570,17 @@ class _E extends _E0
       D('ALL', sel, r);
       return r;
     }
+  NAME(n)
+    {
+      const ret = [];
+      for (const e of defArr(this._E, document))
+        e.getElementsByName(n).forEach(_ => ret.push(_));
+      const r = E(ret);
+      D('NAME', n, r);
+      return r;
+    }
+
+  focus()		{ this._e?.focus(); return this }
 
   get $x()		{ return this._pos().x }
   get $y()		{ return this._pos().y }
@@ -1355,7 +1366,9 @@ class LRU		// Clean LRU key/value cache implementation
     get $max()	{ return this._max }
     set $max(m)	{ this._max = isInt(m) && m>0 ? m : 10 }	// this does no cleanup by purpose
 
-    GET(k, def)	{ let e = this._get_(k); return e ? e.v : def }	// get key value (or default)
+    async Def(k,f,...a)	{ const e = this._get_(k); if (e) return e.v; const v = await f(...a); this.set(k,v); return v; }
+    DEF(k,f,...a)	{ const e = this._get_(k); if (e) return e.v; const v =       f(...a); this.set(k,v); return v; }
+    GET(k, def)	{ const e = this._get_(k); return e ? e.v : def }	// get key value (or default)
     DEL(k,d)	{ return this._get_(k) ? this.POPM().v : d }	// remove key (if exist) and return v (or default)
 
     //
