@@ -544,9 +544,9 @@ class _E0 extends Callable
   Run(fn, ...a)		{ return P(fn, this, ...a) }
   Run$(fn, ...a)	{ return P$$(fn, this, a) }
   Run$$(fn,a)		{ return P$$(fn, this, a) }
-  run(fn, ...a)		{ for (const e of this._E) fn(e, ...a); return this }
-  run$(fn, ...a)	{ return this.run$$(fn,a) }
-  run$$(fn,a)		{ for (const e of this._E) fn.apply(e, a); return this }
+  run(fn, ...a)		{ fn(this, ...a); return this }
+  run$(fn, ...a)	{ fn.apply(this, a); return this }
+  run$$(fn,a)		{ fn.apply(this, a); return this }
 
   forEach(...a)		{ return this.run(...a) }
 
