@@ -1492,7 +1492,7 @@ class WeakCache
     }
   get factory()
     {
-      return (...args) => GET(args);
+      return (...args) => this.GET(args);
     }
   _map(arr)
     {
