@@ -717,6 +717,7 @@ class _E extends _E0
 
   get $options()	{ return (function *() { for (const a of this._e.selectedOptions) yield E(a) }).call(this) }
   get $option()		{ return E(this.$?.selectedOptions[0]) }
+  set $option(s)	{ for (const a of this._e.options) if (a.value == s) return a.selected = true }
 
   selected(state)	{ if (state != void 0) this._e.selected = !!state; return this }
 
