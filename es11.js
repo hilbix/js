@@ -62,22 +62,22 @@ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'
 const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
 //E() see below
 //Get()	fetch via 'GET'
-const isFunction= f => typeof v === 'function';
+const isFunction= f => typeof v === 'function';			// https://stackoverflow.com/a/6000009
 const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
 const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
 const isArray	= a => Array.isArray(a);
 const isInt	= i => Number.isInteger(i);
 //KO()
-const mkArr = x => Array.isArray(x) ? x : [x];
-const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }
+const mkArr = x => Array.isArray(x) ? x : [x];			// creates single element array from non-Array datatypes
+const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }	// same as mkArr, except for [] which becomes default array
 
 // I hate this.  Why is debugging Promises so hard?  Why isn't it built in?
-// Promise.resolve(1).then(OK).catch(KO).then(...OKO('mypromise'))
+// Promise.resolve().then(_ => randomly_failing_function()).then(OK).catch(KO).then(...OKO('mypromise'))
 const KO = (e, ...a) =>	{ D('catch', e, ...a); throw e }	// Promise.reject().catch(KO).then(not_executed)
-const OK = (v, ...a) =>	{ D('then', v, ...a); return v }
+const OK = (v, ...a) =>	{ D('then', v, ...a); return v }	// Promise.resolve().then(OK).then(..)
 const OKO = (...a) =>	[ v => OK(v, ...a), e => KO(e, ...a) ]	// Promise.reject.then(...OKO('mypromise')).then(not_executed)
-const KOK = (...a) =>	DD(...a)				// Promise.reject().catch(KOK('shown when fail&debug')).then(executed)
-const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(IGN('always log fail')).then(executed)
+const KOK = (...a) =>	DD(...a)				// Promise.reject().catch(KOK('shown when fail&debug')).then(..)
+const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(IGN('error is ignored')).then(..)
 
 // Create real Error()s on catch chains for better processing.
 //
@@ -98,9 +98,9 @@ const THROW = e => { e = e instanceof Error ? e : e instanceof ErrorEvent ? new 
 const PR = Promise.resolve();	// PRomise
 const PE = Promise.reject();	// PromisErr
 PE.catch(DONOTHING);		// shutup "Uncaught in Promise" due to PE
-const P = (fn,...a) => PR.then(() => fn(...a));
-const P$ = (fn,self,...a) => P$$(fn,self,a);
-const P$$ = (fn,self,a) => PR.then(() => _FPA.call(fn, self, a));
+const P = (fn,...a) => PR.then(() => fn(...a));		// invoke fn(a) in microtask: P(fn,a).then(..).catch(..). See also single_run()
+const P$ = (fn,self,...a) => P$$(fn,self,a);		// invoke fn(a) with this===self
+const P$$ = (fn,self,a) => PR.then(() => _FPA.call(fn, self, a));	// same as P$ but with arguments in array (for optimization)
 
 const PC = P$;	// deprecated
 
@@ -122,21 +122,24 @@ const _MUJ	= m => _MTFUD(m, 'application/json', JSON.stringify)
 const PostJSON	= _MUJ('POST')
 const PutJSON	= _MUJ('PUT')
 
-const Json	= p => p.then(r => r.status==200 ? r.json() : THROW(r.status))
-const Text	= p => p.then(r => r.status==200 ? r.text() : THROW(r.status))
-const GetText	= u => Text(Get(u))
-const GetJSON	= u => Json(Get(u))
+const _Json	= p => p.then(r => r.status==200 ? r.json() : THROW(r.status))
+const _Text	= p => p.then(r => r.status==200 ? r.text() : THROW(r.status))
+const GetText	= u => _Text(Get(u))
+const GetJSON	= u => _Json(Get(u))
 
 // Escape URI and (only the problematic) HTML entities
 // As there are gazillions of named HTML entities (and counting)
 // we do NOT want to support them.  Never.  Sorry.
-const UE = x => encodeURIComponent(x);	// WTF? I almost broke a finger typing this!
-const UD = x => decodeURIComponent(x);	// WTF? BTW: Out of 666 characters long names?
-const HE = x => String(x).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);
-const HD = x => String(x).replace(/&#(\d)+;/g, (s,c) => String.fromCharChode(c));
-const HU = x => HE(UE(x));		// special short form
-const JU = x => UE(toJ(x));		// very special short form
+const UE = x => encodeURIComponent(x);	// URLencoded WTF? I almost broke a finger typing this!
+const UD = x => decodeURIComponent(x);	// URLdecoded WTF? BTW: Out of 666 characters long names?
+const HE = x => String(x).replace(/[&<>"]/g, c => `&#${c.charCodeAt(0)};`);		// HTMLencoded
+const HD = x => String(x).replace(/&#(\d)+;/g, (s,c) => String.fromCharChode(c));	// HTMLdecoded
+const HU = x => HE(UE(x));		// HTML+URLencoded special short form		(for inclusion in literal DOM)
+const JU = x => UE(toJ(x));		// JSON URLencoded special short form		(for inclusion in URL)
+const JHU = x => HU(toJ(x));		// JSON HTML+URLencoded special short form	(for inclusion in literal DOM)
 
+// Dummy support for perhaps missing WeakRefs.  (This is mainly for Babel)
+// The fallback is not good as it leaks memory, but we cannot implement this any better way here.
 const es11WeakRef = (() =>
   {
     try {
