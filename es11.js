@@ -106,10 +106,11 @@ const PC = P$;	// deprecated
 
 const fromJ	= o => JSON.parse(o);
 const toJ	= o => JSON.stringify(o);
-const SleeP	= (ms,v) => new Promise(ok => setTimeout(ok, ms, v));
-const SleEp	= (ms,e) => new Promise((ok,ko) => setTimeout(ok, ms, e));
-const sleepFn	= ms => r => SleeP(ms, r);
-const sleepErr	= ms => e => SleEp(ms, e);
+
+const SleeP	= (ms,v) => new Promise(ok => setTimeout(ok, ms, v));		// await SleeP(10).then(..)
+const SleEp	= (ms,e) => new Promise((ok,ko) => setTimeout(ko, ms, e));	// await SleEp(10).catch(..)
+const sleepFn	= ms => r => SleeP(ms, r);					// .then(sleepFn(10)).then(..)
+const sleepErr	= ms => e => SleEp(ms, e);					// .catch(sleepErr(10)).catch(..)
 
 
 // fetch() promises
