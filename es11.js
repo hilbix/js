@@ -95,6 +95,7 @@ const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(I
 const THROW = e => { e = e instanceof Error ? e : e instanceof ErrorEvent ? new Error(e.message, e.filename, e.lineno, e.colno) : new Error(e); D('ERROR', e); throw e }
 
 // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
+const PO = () => { const o={}; o.p = new Promise((ok,ko) => { o.ok=ok; o.ko=ko }); return o }	// PromiseObject
 const PR = Promise.resolve();	// PRomise
 const PE = Promise.reject();	// PromisErr
 PE.catch(DONOTHING);		// shutup "Uncaught in Promise" due to PE
