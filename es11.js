@@ -159,6 +159,18 @@ const es11WeakRef = (() =>
     }
   })();
 
+
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+// OVERVIEW: (sync:immediately, async:microtask, cycle:task queue, frame:animation frame)
+//
+// r=tmpcache(fn,a):		sync: r(b) caches fn(a), but only in this cycle
+// r=single_run(fn,a):		async: r(b) runs fn(a,b) if it not already runs, else re-runs last invocation when fn(a,b) finishes
+// r=once_per_cycle(fn,a):	cycle: r(b) runs fn(a,b) once on end of cycle. r(b) returns unused arguments (previous invocation not realized)
+// r=once_per_frame(fn,a):	frame: as once_per_cycle() but on animation frame.
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+
 // Temporarily cache something expensive (expires at the next loop)
 // This is mainly for class methods like getters as it distinguishes on 'this'.
 // However it should work with global function, too, as here 'this' is window.
@@ -241,7 +253,66 @@ const single_run = (fn, ...a) =>
         if (!running)
           loop();
       })
-  }
+  };
+
+// Wrap a functioncall such, that it is only called once in a cycle or frame:
+//
+// const doitonce = once_per_cycle(console.log)
+// doitonce(1);         // returns void 0
+// doitonce(2,3,4);     // returns [1]
+// doitonce('x');       // returns [2,3,4]
+// await relax();       // console.log('x') is executed
+//
+// Only the last parameters from the call survive.  Previous parameters are returned by the wrapper.
+//
+// If the executed function recursively calles the wrapper, this is ignored, so x=void 0 is at the correct place.
+// If a once_per_cycle() function calles a new once_per_cycle(), it is executed immediately, but only once.
+// Hence there cannot be an endless loop caused by this, each routine only is called once per cycle, at maximum.
+const _run_once = _ => (f => f(_))(later =>
+  {
+    let run, block;
+    const exec = () =>
+      {
+        block = [];             // create unique semaphore
+        try {
+          let x;
+          while (x=run.pop())
+            x();
+        } finally {
+          run   = void 0;
+          block = void 0;       // drop used semaphore
+        }
+      }
+    return (fn,...a) =>
+      {
+        let x, done = [];       // no previous semaphore
+        const call = () => { if (block!==done) { done=block; fn(...a,...x) } }; // run if semaphore changed
+        if (block)
+          throw new Exception('once_per_cycle() called from within function executing once per cycle');
+        return (...b) =>
+          {
+            const was = x;
+            x = b;
+            if (block===done)
+              return b;			// we return the args, which are not used (already used: was)
+            if (block)
+              {
+                call();			// we are within once-per-cycle, so run it immediately
+                return was;		// we return the args, which are not used (just used: a)
+              }
+            // we are outside once-per-cycle here
+            if (was) return was;	// we return the args, which are not used (will use: a)
+            if (!run)
+              {
+                later(exec);		// process everyting once after this cycle (and Microtasks)
+                run     = [];
+              }
+            run.push(call);		// build list what to do in run[]
+          }
+      }
+  });
+const once_per_cycle = _run_once(_ => setTimeout(_));
+const once_per_frame = _run_once(_ => window.requestAnimationFrame(_));
 
 // ON-Event class (in the capture phase by default)
 // If the handling returns trueish, processing of the event stops (this is the exact opposite of old DOM).
