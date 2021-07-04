@@ -967,19 +967,19 @@ SHA256hex('hw')
 // If fn() returns truish, it will be removed (like a call to .off())
 class OnOff
   {
-  constructor() { this._fns = {} }
+  constructor() { this._fns = new Map() }
   on(...a) { this.ON(...a); return this }
   off(...a) { this.OFF(...a); return this }
-  ON(fn,...a) { const i = Object(); this._fns[i]=[fn,a]; return i }
-  OFF(...a) { for (const b of a) delete this._fns[b] }
+  ON(fn,...a) { const i = Object(); this._fns.set(i,[fn,a]); return i }
+  OFF(...a) { for (const b of a) delete this._fns.delete(b) }
   trigger(...a)
     {
-      for (const [k,v] of Object.entries(this._fns))
-        if (v[0].call(this, ...v[1], ...a))
-          delete this._fns[k];
+      for (const [k,[f,b]] of this._fns.entries())
+        if (f.call(this, ...b, ...a))
+          delete this._fns.delete(k);
       return this;
     }
-  }
+  };
 
 //
 // easy global state keeping
