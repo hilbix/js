@@ -927,6 +927,158 @@ const X = (...args) =>
     return E(x);
   };
 
+// Event emitter class:
+// reg = o.ON('ev1 ev2 ev3', fn)	// register events
+// o.OFF(reg)				// unregister
+// fn({o,t,d}) where o==instance, t=event, d=data depending on the event
+// if fn() returns truthy it is removed (from all events it is registered)
+// if fn() throws it is removed (from all events it is registered)
+class Emit
+  {
+  constructor(events)
+    {
+      if (!isArray(events)) events=events.split(' ');
+      events.push('ON','OFF', '*');
+      const o = {};
+      events.forEach(_ => o[_]=new Map());
+      this._on = o;
+    }
+  ON(what, fn)
+    {
+      const id = [];
+      for (const t in what.split(' '))
+        if (t)
+          {
+            const m = this._on[t];
+            if (!m) throw `unknown event ${t}`;
+            m.set(id,fn);
+            id.push(t);
+          }
+      Object.freeze(id);
+      this._Emit('ON', {id,fn})
+      if (id.length)
+        return id;
+    }
+  OFF(id)
+    {
+      if (id) id.forEach(_ => this._on[_].delete(id));
+      return this._Emit('OFF', {id})
+    }
+  async _Emit(t, d)
+    {
+      await void 0;				// run as microtask
+      const emit = (v,k) =>
+        {
+          try {
+            if (!v({o:this,t,d})) return;
+          } catch (e) {CONSOLE(e)}
+          this.OFF(k);
+        };
+      this._on['*'].forEach(emit);		// * receives all events
+      this._on[t].forEach(emit);		// send to the given event functions
+    }
+  };
+
+// Asynchronous unidirectional Queue, with events
+// This queue is not meant to be very efficient when it comes to multiple readers/writers
+// It is meant to have a very clean and easy to use interface.
+// const q = UniQ();
+// await q.Put(data).then(data => ..);
+// await q.Get().then(data => ..);
+// Queueing is first-come, first-served.
+// Waiting is not yet fair:
+// - If queue gets full, first one which is blocked waits longest!
+class UniQ extends Emit
+  {
+  constructor(max)
+    {
+      super('max put get');
+      this._max = max || 0;
+      this.reset();
+    }
+  reset()
+    {
+      this._q	= [];
+      this._cnt	= {put:0,get:0};
+      this._chg('max', this._max);			// queue resetted
+      return this;
+    }
+  _chg(what,d)
+    {
+      const	p = this._p;
+      this._p	= PO();
+      if (p)
+        p.ok(what);
+      this._emit(what,d);
+      return this;
+    }
+  Wait()		// wait for something to happen on Q
+    {
+      if (!this._p)
+        this._p	= PO();
+      return this._p.p;
+    }
+  get $gets()	{ return this._cnt.get }
+  get $puts()	{ return this._cnt.put }
+  get $cnt()	{ return Object.copy(this._cnt) }
+  get $len()	{ return this._q.length }
+  get $max()	{ return this._max }
+  set $max(m)	{ this._max = m; this._chg('max', m) }	// max changed
+  async Put(e)
+    {
+      this._q.push(e);
+      this._cnt.put++;
+      const max = this._q.length;
+// To create fair queuing: Only wait until our entry reaches the queue below max
+// However for this we must be able to count the gets
+      this._chg('put', e);				// element added
+      while (this._q.length>this._max && this._max>0)
+        await this.Wait();
+      return e;
+    }
+  async Get(n)		// get.  You can wait Q above some fillstate
+    {
+      n = n|0;
+      if (n<0) n=0;
+      while (this._q.length<=n)
+        await this.Wait();
+      const r = this._q.shift();
+      this._cnt.get++;
+      this._chg('get', r);				// element removed
+      return r;
+    }
+  async Room(n)		// wait for Q having room.  Returns free buckets
+    {
+      n = n|0;
+      if (n<1) n=1;
+      n--;
+      while (this._q.length+n >= this._max && this._max>n)
+        await this.Wait();
+      return this._max - this._q.length;
+    }
+  async Fill(n)		// wait for Q having data.  Returns current fill state
+    {
+      n = n|0;
+      if (n<1) n=1;
+      while (this._q.length<n)
+        await this.Wait();
+      return this._q.length;
+    }
+  async Full()		// wait for Q to get completely filled.  Returns current fill state
+    {
+      n = n|0;
+      if (n<1) n=1;
+      while (this._q.length<this._max || this._q.length<n)
+        await this.Wait();
+      return this._q.length;	// this can be >max
+    }
+  async* [Symbol.asyncIterator]()
+    {
+      for (;;)
+        yield await this.get();
+    }
+  };
+
 // Asynchronous Bidirectional Communication Queue
 // q = new Q()
 // popdata = await q.Push([pushdata]..)	=> waits until pushdata was popped, returns the popdata
@@ -994,6 +1146,8 @@ class Q
       return this;
     }
   };
+
+
 
 
 //
