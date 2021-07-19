@@ -315,6 +315,23 @@ const _run_once = _ => (f => f(_))(later =>
 const once_per_cycle = _run_once(_ => setTimeout(_));
 const once_per_frame = _run_once(_ => window.requestAnimationFrame(_));
 
+// Example:
+// for (let i=0; ++i<1000000; ) fetch(`http://example.com/?${i}`);	// crashes the Tab
+// const fetch50 = Semaphore(50, fetch);				// repair
+// for (let i=0; ++i<1000000; ) fetch50(`http://example.com/?${i}`);	// works
+const Semaphore = (max, fn, ...a1) =>
+  {
+    let run = 0;
+    const waits = [];
+    function next(x)
+      {
+        if (run<max && waits.length)
+          waits.shift()(++run);
+        return x;
+      }
+    return (...a2) => next(new Promise(ok => waits.push(ok)).then(() => fn(...a1,...a2)).finally(_ => run--).finally(next));
+  }
+
 // ON-Event class (in the capture phase by default)
 // If the handling returns trueish, processing of the event stops (this is the exact opposite of old DOM).
 // `this` is set to the ON-instance within the function (if not bound elsewhere)
