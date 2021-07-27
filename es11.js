@@ -629,6 +629,9 @@ class _E0 extends Callable
   get $()		{ return this._e; }
   get $all()		{ return this._E; }
 
+  get $data()		{ return this._d || (this._d = {}); }
+  data(x,y)		{ this.$data[x]=y; return this }
+
   rm()			{ for (const e of this._E) e.remove(); return this }
   remove()		{ return this.rm() }
   clr()			{ let a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this }
