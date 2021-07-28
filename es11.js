@@ -734,7 +734,7 @@ class _E extends _E0
   get $class()		{ return this._e.classList }
   // XXX TODO XXX missing: .$class = [list] so this is idempotent: .$class = .$class
   // .$class = {classname:true, classname2:false}
-  set $class(o)		{ for (const a in o) this._e.classList.toggle(a, o[a]); return this }
+  set $class(o)		{ for (const a in o) this._e.classList.toggle(a, o[a]) }
 
   // Only create Style-class if it is really needed
   get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
@@ -845,7 +845,7 @@ class _E extends _E0
   get PREV()		{ return E0(this._e?.previousSibling) }
   get NEXT()		{ return E0(this._e?.nextSibling) }
 
-  setclass(o)		{ this.$class = o }
+  setclass(o)		{ this.$class = o; return this }
   addclass(...c)	{ this.$class.add(...c); return this }
   rmclass(...c)		{ this.$class.remove(...c); return this }
   replaceclass(old,c)	{ this.$class.replace(old,c); return this }
