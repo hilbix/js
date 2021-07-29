@@ -1,4 +1,6 @@
 'use strict';	// this is for ES11 aka ES2020
+// In future: s/__/#/g
+// Do not try to access __ things, as IT WILL FAIL in future!
 
 // TODO:
 //
@@ -155,8 +157,9 @@ const es11WeakRef = (() =>
       // (This cannot be implemented with WeakMap)
       return class
         {
-        constructor(o) { this._o = o }
-        deref() { return this._o }
+        __o
+        constructor(o) { this.__o = o }
+        deref() { return this.__o }
         }
     }
   })();
@@ -343,23 +346,25 @@ const Semaphore = (max, fn, ...a1) =>
 // Use this.detach() to remove the error handler again, no error prone bookkeeping required
 class ON
   {
+  __type; __capture; __el; __fn
+
   constructor(type, capture=true)
     {
-      this._type	= type;
-      this._capture	= capture;
-      this._el		= [];
-      this._fn		= [];
+      this.__type	= type;
+      this.__capture	= capture;
+      this.__el		= [];
+      this.__fn		= [];
     }
 
   add(fn, ...a)		{ return this.add$$(fn,a) }
   add2(fn, ...a)	{ return this.add$$(function (...a) { fn(this,...a) }, a) }
-  add$$(fn, a)		{ this._fn.push([fn,a]); return this }
-//remove(fn, ...a)	{ this._fn.remove([fn,a]); return this }	does not work this way
+  add$$(fn, a)		{ this.__fn.push([fn,a]); return this }
+//remove(fn, ...a)	{ this.__fn.remove([fn,a]); return this }	does not work this way
 
   handleEvent(ev)
     {
       this.$ = ev;
-      for (const a of this._fn)
+      for (const a of this.__fn)
         if (a[0].call(this,ev,...a[1]))
           {
             ev.preventDefault()
@@ -373,20 +378,20 @@ class ON
       for (const o of a)
         for (const e of o)
           {
-            e.addEventListener(this._type, this, true);
-            this._el.push(new es11WeakRef(e));
+            e.addEventListener(this.__type, this, true);
+            this.__el.push(new es11WeakRef(e));
           }
       return this;
     }
 
   detach()
     {
-      const l=this._el;
-      this._el=[];
+      const l=this.__el;
+      this.__el=[];
       for (const a of l)
         {
           const o=l.deref();
-          if (o) o.removeEventListener(this._type, this);
+          if (o) o.removeEventListener(this.__type, this);
         }
       return this;
     }
@@ -628,19 +633,21 @@ class Callable extends Function
 // const input = E().DIV.text('hello world ').INPUT;
 class _E0 extends Callable
   {
-  constructor(e)	{ super(); this._e = (this._E = e ? mkArr(e) : [])[0] || FRAGMENT() }
-  get $()		{ return this._e; }
-  get $all()		{ return this._E; }
+  __e; __E; __d
 
-  get $data()		{ return this._d || (this._d = {}); }
+  constructor(e)	{ super(); this.__e = (this.__E = e ? mkArr(e) : [])[0] || FRAGMENT() }
+  get $()		{ return this.__e; }
+  get $all()		{ return this.__E; }
+
+  get $data()		{ return this.__d || (this.__d = {}); }
   data(x,y)		{ this.$data[x]=y; return this }
 
-  rm()			{ for (const e of this._E) e.remove(); return this }
+  rm()			{ for (const e of this.__E) e.remove(); return this }
   remove()		{ return this.rm() }
-  clr()			{ let a; for (const e of this._E) while (a = e.firstChild) a.remove(); return this }
+  clr()			{ let a; for (const e of this.__E) while (a = e.firstChild) a.remove(); return this }
 
-  *[Symbol.iterator]()	{ for (const e of this._E) yield e }
-  *MAP(fn, ...a)	{ for (const e of this._E) yield fn(e, ...a) }
+  *[Symbol.iterator]()	{ for (const e of this.__E) yield e }
+  *MAP(fn, ...a)	{ for (const e of this.__E) yield fn(e, ...a) }
   Run(fn, ...a)		{ return P(fn, this, ...a) }
   Run$(fn, ...a)	{ return P$$(fn, this, a) }
   Run$$(fn,a)		{ return P$$(fn, this, a) }
@@ -650,21 +657,23 @@ class _E0 extends Callable
 
   forEach(...a)		{ return this.run(...a) }
 
-  debug(...a)		{ console.log('debug', ...a, this._E); return this }
+  debug(...a)		{ console.log('debug', ...a, this.__E); return this }
   };
 
 class _E extends _E0
   {
+  __cache
+
   constructor(e)	{ super(e); this._cache = {} }
 
-  get $$()		{ return E(this._e?.parentNode); }
+  get $$()		{ return E(this.$?.parentNode); }
 
   // E().ALL(selector) queries on the document
   // but: E().clr() does NOT clear the document!
   ALL(sel)
     {
       const ret = [];
-      for (const e of defArr(this._E, document))
+      for (const e of defArr(this.$all, document))
         e.querySelectorAll(sel).forEach(_ => ret.push(_));
       const r = E(ret);
       D('ALL', sel, r);
@@ -673,19 +682,19 @@ class _E extends _E0
   NAME(n)
     {
       const ret = [];
-      for (const e of defArr(this._E, document))
+      for (const e of defArr(this.$all, document))
         e.getElementsByName(n).forEach(_ => ret.push(_));
       const r = E(ret);
       D('NAME', n, r);
       return r;
     }
 
-  focus()		{ this._e?.focus(); return this }
+  focus()		{ this.$?.focus(); return this }
 
   get $x()		{ return this._pos().x }
   get $y()		{ return this._pos().y }
-  get $w()		{ return this._e.offsetWidth }
-  get $h()		{ return this._e.offsetHeight }
+  get $w()		{ return this.$.offsetWidth }
+  get $h()		{ return this.$.offsetHeight }
   x(x)			{ return this.style({left:`${x}px`}) }
   y(y)			{ return this.style({top:`${y}px`}) }
   w(_)			{ const w=`${_}px`; return this.style({width:w,maxWidth:w}) }
@@ -695,15 +704,15 @@ class _E extends _E0
   set $w(_)		{ this.w(_) }
   set $h(_)		{ this.h(_) }
   get $xy()		{ const p = this._pos(); return [ p.x, p.y ] }
-  get $wh()		{ return [ this._e.offsetWidth, this._e.offsetHeight ] }
-  get $xywh()		{ const p = this._pos(); return [ p.x, p.y, this._e.offsetWidth, this._e.offsetHeight ] }
-  get $XYWH()		{ const p = this._pos(); p.w = this._e.offsetWidth; p.h = this._e.offsetHeight; return p }
-  get $rb()		{ const p = this._pos(); return [ p.x+this._e.offsetWidth, p.y+this._e.offsetHeight ] }
-  get $ltrb()		{ const p = this._pos(); return [ p.x, p.y, p.x+this._e.offsetWidth, p.y+this._e.offsetHeight ] }
-  get $LTRB()		{ const p = this._pos(); return { left:p.x, top:p.y, right:p.x+this._e.offsetWidth, b:p.y+this._e.offsetHeight } }
+  get $wh()		{ return [ this.$.offsetWidth, this.$.offsetHeight ] }
+  get $xywh()		{ const p = this._pos(); return [ p.x, p.y, this.$.offsetWidth, this.$.offsetHeight ] }
+  get $XYWH()		{ const p = this._pos(); p.w = this.$.offsetWidth; p.h = this.$.offsetHeight; return p }
+  get $rb()		{ const p = this._pos(); return [ p.x+this.$.offsetWidth, p.y+this.$.offsetHeight ] }
+  get $ltrb()		{ const p = this._pos(); return [ p.x, p.y, p.x+this.$.offsetWidth, p.y+this.$.offsetHeight ] }
+  get $LTRB()		{ const p = this._pos(); return { left:p.x, top:p.y, right:p.x+this.$.offsetWidth, b:p.y+this.$.offsetHeight } }
   _pos = tmpcache(function ()
     {
-      let o = this._e;
+      let o = this.$;
       let x = o.offsetLeft;
       let y = o.offsetTop;
       while (o = o.offsetParent)
@@ -716,28 +725,28 @@ class _E extends _E0
 
 // setting is NOT supported due to caching
 //E(e)			{ return this.e(e).$ }
-//set $(e)		{ this._e = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
-//e(e)			{ if (e) this._e = e; return this }
+//set $(e)		{ this.$ = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
+//e(e)			{ if (e) this.$ = e; return this }
 
-  get $tag()		{ return this._e.nodeName }	// DIV, SPAN, etc.
-  get $text()		{ return this._e.textContent }	// innerText causes reflow
-  set $text(s)		{ return this._e.textContent = s }	// innerText has bad siedeffects on IE<=11
-  get $align()		{ return this._e.align }
-  set $align(a)		{ this._e.align = a }
-  get $value()		{ return this._e.value }
-  set $value(v)		{ this._e.value = v }
-  get $src()		{ return this._e.src }
-  set $src(u)		{ this._e.src = u }
-  get $alt()		{ return this._e.alt }
-  set $alt(u)		{ this._e.alt = u }
-  get $checked()	{ return this._e.checked }
-  set $checked(b)	{ this._e.checked = !!b }
-  get $disabled()	{ return this._e.disabled }
-  set $disabled(b)	{ this._e.disabled = !!b }
-  get $class()		{ return this._e.classList }
+  get $tag()		{ return this.$.nodeName }	// DIV, SPAN, etc.
+  get $text()		{ return this.$.textContent }	// innerText causes reflow
+  set $text(s)		{ return this.$.textContent = s }	// innerText has bad siedeffects on IE<=11			// XXX TODO XXX $all!
+  get $align()		{ return this.$.align }
+  set $align(a)		{ this.$.align = a }			// XXX TODO XXX $all!
+  get $value()		{ return this.$.value }
+  set $value(v)		{ this.$.value = v }			// XXX TODO XXX $all!
+  get $src()		{ return this.$.src }
+  set $src(u)		{ this.$.src = u }			// XXX TODO XXX $all!
+  get $alt()		{ return this.$.alt }
+  set $alt(u)		{ this.$.alt = u }			// XXX TODO XXX $all!
+  get $checked()	{ return this.$.checked }
+  set $checked(b)	{ this.$.checked = !!b }		// XXX TODO XXX $all!
+  get $disabled()	{ return this.$.disabled }
+  set $disabled(b)	{ this.$.disabled = !!b }
+  get $class()		{ return this.$.classList }
   // XXX TODO XXX missing: .$class = [list] so this is idempotent: .$class = .$class
   // .$class = {classname:true, classname2:false}
-  set $class(o)		{ for (const a in o) this._e.classList.toggle(a, o[a]) }
+  set $class(o)		{ for (const a in o) this.$.classList.toggle(a, o[a]) }			// XXX TODO XXX $all!
 
   // Only create Style-class if it is really needed
   get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
@@ -814,11 +823,11 @@ class _E extends _E0
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
 
-  get $options()	{ return (function *() { for (const a of this._e.selectedOptions) yield E(a) }).call(this) }
+  get $options()	{ return (function *() { for (const a of this.$.selectedOptions) yield E(a) }).call(this) }
   get $option()		{ return E(this.$?.selectedOptions[0]) }
-  set $option(s)	{ for (const a of this._e.options) if (a.value == s) return a.selected = true }
+  set $option(s)	{ for (const a of this.$.options) if (a.value == s) return a.selected = true }
 
-  selected(state)	{ if (state != void 0) this._e.selected = !!state; return this }
+  selected(state)	{ if (state != void 0) this.$.selected = !!state; return this }
 
   updater(fn, ...a)	{ this._upd = [fn,a]; return this }
   UPDATE(...a)		{ return this._upd[0](this, ...this._upd[1], ...a) }
@@ -832,21 +841,21 @@ class _E extends _E0
   href(href)		{ return this.attr({href}) }
   id(id)		{ return this.attr({id}) }
   name(name)		{ return this.attr({name}) }
-  attr(a)		{ if (a) for (const b in a) for (const e of this._E) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
-  style(a)		{ if (a) for (const b in a) for (const e of this._E) e.style[b] = a[b]; return this }
+  attr(a)		{ if (a) for (const b in a) for (const e of this.$all) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
+  style(a)		{ if (a) for (const b in a) for (const e of this.$all) e.style[b] = a[b]; return this }
   // prepend/append to parent
-  get prep()		{ return (...c) => { const n=this._e, f=FRAGMENT(); if (n) for (const a of c) for (const b of E(a)) f.append(b); n.prepend(f); return this } }
+  get prep()		{ return (...c) => { const n=this.$, f=FRAGMENT(); if (n) for (const a of c) for (const b of E(a)) f.append(b); n.prepend(f); return this } }
   set prep(c)		{ this.prep(c) }
-  add(...c)		{ const n=this._e; if (n) for (const a of c) for (const b of E(a)) n.append(b); return this }
+  add(...c)		{ const n=this.$; if (n) for (const a of c) for (const b of E(a)) n.append(b); return this }
   // prepend/append relative to current
-  before(...c)		{ const n=this._e; if (n) for (const a of c) for (const b of E(a)) n.before(b); return this }
-  after(...c)		{ let n=this._e; if (n) for (const a of c) for (const b of E(a)) { n.after(b); n=b }; return this }
+  before(...c)		{ const n=this.$; if (n) for (const a of c) for (const b of E(a)) n.before(b); return this }
+  after(...c)		{ let n=this.$; if (n) for (const a of c) for (const b of E(a)) { n.after(b); n=b }; return this }
   attach(p)		{ E(p).add(this); return this }
 
-  get FIRST()		{ return E0(this._e?.firstChild) }
-  get LAST()		{ return E0(this._e?.lastChild) }
-  get PREV()		{ return E0(this._e?.previousSibling) }
-  get NEXT()		{ return E0(this._e?.nextSibling) }
+  get FIRST()		{ return E0(this.$?.firstChild) }
+  get LAST()		{ return E0(this.$?.lastChild) }
+  get PREV()		{ return E0(this.$?.previousSibling) }
+  get NEXT()		{ return E0(this.$?.nextSibling) }
 
   setclass(o)		{ this.$class = o; return this }
   addclass(...c)	{ this.$class.add(...c); return this }
@@ -958,13 +967,15 @@ const X = (...args) =>
 // if fn() throws it is removed (from all events it is registered)
 class Emit
   {
+  __on
+
   constructor(events)
     {
       if (!isArray(events)) events=events.split(' ');
       events.push('ON','OFF', '*');
       const o = {};
       events.forEach(_ => o[_]=new Map());
-      this._on = o;
+      this.__on = o;
     }
   ON(what, fn)
     {
@@ -972,7 +983,7 @@ class Emit
       for (const t in what.split(' '))
         if (t)
           {
-            const m = this._on[t];
+            const m = this.__on[t];
             if (!m) throw `unknown event ${t}`;
             m.set(id,fn);
             id.push(t);
@@ -984,7 +995,7 @@ class Emit
     }
   OFF(id)
     {
-      if (id) id.forEach(_ => this._on[_].delete(id));
+      if (id) id.forEach(_ => this.__on[_].delete(id));
       return this._Emit('OFF', {id})
     }
   async _Emit(t, d)
@@ -997,8 +1008,8 @@ class Emit
           } catch (e) {CONSOLE(e)}
           this.OFF(k);
         };
-      this._on['*'].forEach(emit);		// * receives all events
-      this._on[t].forEach(emit);		// send to the given event functions
+      this.__on['*'].forEach(emit);		// * receives all events
+      this.__on[t].forEach(emit);		// send to the given event functions
     }
   };
 
