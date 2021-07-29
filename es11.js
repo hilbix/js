@@ -46,6 +46,7 @@ const _FPA = Function.prototype.apply;
 const _FPC = Function.prototype.call;
 const DONOTHING = function(){}					// The "do nothing" DUMMY function
 let CONSOLE = (...a) => { console.log(...a) };			// returns void 0 for sure (and changeable)
+const DEPRECATED = (_ => (...a) => { if (_) CONSOLE([_--].concat(a), new Error(`deprecation warning`)) })(100); // prints 100 occurances (hopefully with stacktrace)
 
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
@@ -197,8 +198,10 @@ const tmpcache = (fn,...a) =>			// use a real function here to provide 'this'
 
 class Cancelled
   {
-  constructor(...a) { this._a = a }
-  get cancelled() { return this._a }
+  __a
+  constructor(...a) { this.__a = a }
+  get $cancelled() { return this.__a }
+  get cancelled() { DEPRECATED('please use .$cancelled'); return this.__a }
   };
 
 // Run something a single time in backround where only the last invocation is cached.
@@ -213,18 +216,18 @@ class Cancelled
 // r(b).then(
 //           val => process(val)
 //           ,
-//           err => err.cancelled ? was_cancelled(err) : other_error(err)
+//           err => err.$cancelled ? was_cancelled(err) : other_error(err)
 //          )
 //
 // - single_run(fn,a) returns a function (here called r)
 //   In future this might change to a callable class which encapsulates it all.
 // - r(b) returns a Promise which resolves to the return value (or error) of fn(a,b)
 // - Until this Promise is resolved, further calls to r(x) are delayed until the Promise resolves
-// - If another r(y) arrives while r(x) is waiting, r(x) is cancelled with the Cancelled() class (which does not derive from Error by purpose).
+// - If another r(y) arrives while r(x) is waiting, r(x) is rejected with the Cancelled() class (which does not derive from Error by purpose).
 //   r(y) replaces r(x) this way
-// - On Cancelled() the .cancelled property returns the (truthy) array of the given arguments which replaced the r(x) (the [a,y])
-//   Hence you can test with something like .catch(e => { if (e.cancelled) ..
-//   This also works with try { await r(y) } catch (e)  { if (e.cancelled) ..
+// - On Cancelled() the .$cancelled property returns the (truthy) array of the given arguments which replaced the r(x) (the [a,y])
+//   Hence you can test with something like .catch(e => { if (e.$cancelled) ..
+//   This also works with try { await r(y) } catch (e)  { if (e.$cancelled) ..
 const single_run = (fn, ...a) =>
   {
     let invoke, running;
