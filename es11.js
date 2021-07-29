@@ -864,7 +864,11 @@ class _E extends _E0
   toggleclass(...c)	{ for (const a in c) this.$class.toggle(a); return this }
   has_class(c)		{ return this.$class.contains(c) }
 
-  Loaded()		{ return Promise.all(Array.from(this.MAP(_ => _.decode()))) }
+  // Loaded() may fail in case image cannot be decoded (JS is far more picky than the browser itself)
+  // Read: This here still is not perfect and might change in future!
+  Loaded()		{ return Promise.allSettled(Array.from(this.MAP(_ => _.decode()))) }
+  // Scroll into view as soon as mapped: img.Loaded().then(_ => img.show())
+  show(mode)		{ this.$?.scrollIntoView(mode || {block:'nearest'}); return this }
   };
 
 // Create a DOM Element (class _E below).
