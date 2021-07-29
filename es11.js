@@ -1047,7 +1047,7 @@ class UniQ extends Emit
       this._p	= PO();
       if (p)
         p.ok(what);
-      this._emit(what,d);
+      this._Emit(what,d);
       return this;
     }
   Wait()		// wait for something to happen on Q
