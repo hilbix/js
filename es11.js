@@ -110,6 +110,12 @@ const PC = P$;	// deprecated
 
 const fromJ	= o => JSON.parse(o);
 const toJ	= o => JSON.stringify(o);
+const sortJ	= (ob,sort,space) => JSON.stringify(ob	// sorted JSON.stringify, see https://stackoverflow.com/a/43636793
+  , (k,v) =>
+    (v instanceof Object && !(v instanceof Array || v instanceof Date || v instanceof Function))
+    ? Object.keys(v).sort(sort).reduce((x,y) => (x[y] = v[y], x), {})
+    : v
+  , space);
 
 const SleeP	= (ms,v) => new Promise(ok => setTimeout(ok, ms, v));		// await SleeP(10).then(..)
 const SleEp	= (ms,e) => new Promise((ok,ko) => setTimeout(ko, ms, e));	// await SleEp(10).catch(..)
