@@ -701,6 +701,8 @@ class _E extends _E0
   get $y()		{ return this._pos().y }
   get $w()		{ return this.$.offsetWidth }
   get $h()		{ return this.$.offsetHeight }
+  get $r()		{ return this.pos().x + this.$.offsetWidth }
+  get $b()		{ return this.pos().y + this.$.offsetHeight }
   x(x)			{ return this.style({left:`${x}px`}) }
   y(y)			{ return this.style({top:`${y}px`}) }
   w(_)			{ const w=`${_}px`; return this.style({width:w,maxWidth:w}) }
@@ -715,7 +717,7 @@ class _E extends _E0
   get $XYWH()		{ const p = this._pos(); p.w = this.$.offsetWidth; p.h = this.$.offsetHeight; return p }
   get $rb()		{ const p = this._pos(); return [ p.x+this.$.offsetWidth, p.y+this.$.offsetHeight ] }
   get $ltrb()		{ const p = this._pos(); return [ p.x, p.y, p.x+this.$.offsetWidth, p.y+this.$.offsetHeight ] }
-  get $LTRB()		{ const p = this._pos(); return { left:p.x, top:p.y, right:p.x+this.$.offsetWidth, b:p.y+this.$.offsetHeight } }
+  get $LTRB()		{ const p = this._pos(); return { left:p.x, top:p.y, right:p.x+this.$.offsetWidth, bottom:p.y+this.$.offsetHeight } }
   _pos = tmpcache(function ()
     {
       let o = this.$;
@@ -751,7 +753,7 @@ class _E extends _E0
   set $disabled(b)	{ this.$.disabled = !!b }
   get $class()		{ return this.$.classList }
   // XXX TODO XXX missing: .$class = [list] so this is idempotent: .$class = .$class
-  // .$class = {classname:true, classname2:false}
+  // .$class = {classname:true, classname2:false, classname3:void 0}	// latter is toggled
   set $class(o)		{ for (const a in o) this.$.classList.toggle(a, o[a]) }			// XXX TODO XXX $all!
 
   // Only create Style-class if it is really needed
@@ -867,7 +869,7 @@ class _E extends _E0
   addclass(...c)	{ this.$class.add(...c); return this }
   rmclass(...c)		{ this.$class.remove(...c); return this }
   replaceclass(old,c)	{ this.$class.replace(old,c); return this }
-  toggleclass(...c)	{ for (const a in c) this.$class.toggle(a); return this }
+  toggleclass(...c)	{ for (const a of c) this.$class.toggle(a); return this }
   has_class(c)		{ return this.$class.contains(c) }
 
   // Loaded() may fail in case image cannot be decoded (JS is far more picky than the browser itself)
