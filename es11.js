@@ -1260,7 +1260,7 @@ class OnOff
 //
 // easy global state keeping
 //
-// st	= UrlState('id');	// location.hash keeps #id:val# where val is JSON
+// st	= UrlState('id', def);	// location.hash keeps #id:val# where val is JSON
 // console.log(st.state)	// get current value
 // st.state = value		// change current value
 // console.log(st.perm)		// retain current value (for URL back)
@@ -1269,15 +1269,17 @@ class OnOff
 // Triggers .on() if state changes (but not on something like: st.state = st.state)
 class Keep extends OnOff
   {
-  constructor(keeper, id)
+  constructor(keeper, id, def)
     {
       super();
       this._k	= keeper;
       this._id	= id;
+      this._d	= def;
     }
   get state()
     {
-      return this._k.get(this._id);
+      const  v	= this._k.get(this._id);
+      return v === void 0 ? this._d : v;
     }
   set state(v)
     {
@@ -1608,7 +1610,7 @@ const UrlState = (x => x())(function(){
     }
 
   init();
-  function run(id) { return reg[id] || (reg[id] = new Keep(keeper, id)) }
+  function run(id, def) { return reg[id] || (reg[id] = new Keep(keeper, id, def)) }
   run.COOKIE	= function(name) { const c = new Cookie(name); init(c); return c }
   run.cookie	= function(name) { this.COOKIE(name); return this }
   run.buttons	= buttons;
