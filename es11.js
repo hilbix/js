@@ -1385,7 +1385,11 @@ class Keeper
     }
   }
 
-// Cookie('name')
+// Cookie('name')			=> SESSION COOKIE
+// Cookie({name:'name', expire:-2})	=> 2 year cookie
+// Cookie({name:'name', expire:3600})	=> 1 hour cookie
+// But: UrlState-Cookie defaults to 1 year!
+//
 // Cookie({name, path, samesite, secure, httponly, domain, expire})
 // .$	= value;	// to set
 // .$	= void 0;	// to remove
@@ -1415,17 +1419,19 @@ class Cookie extends OnOff
 
       // get the current value
       this._val		= void 0;
-      const x = `${name}=`;
+      const x = `${this.$name}=`;
       for (let c of document.cookie.split(';'))
         {
           if (c.startsWith(' ')) c = c.substr(1);
           if (c.startsWith(x))
             {
               this._val	= UD(c.substr(x.length));
+              CONSOLE('cookie was set', this.$name, this._val);
               this.trigger();
-              break;
+              return;
             }
         }
+      CONSOLE('cookie unknown', this.$name);
     }
   get $name()	{ return this._name }
   get $secure()	{ return this._sec }
@@ -1439,7 +1445,13 @@ class Cookie extends OnOff
   get $domain()	{ return this._dom }
   set $domain(d) { this._dom = d && UE(d) }		// XXX TODO XXX check domain for correctness (UE as workaround)
   get $expire()	{ return this._exp }
-  set $expire(d) { this._exp = d && new Date(d).toUTCString() }
+  // $expire = 10 means expire in 10 seconds
+  // $expire = 0 means: session cookie
+  // $expire = -10 means: in 10 years
+  // $expire = true: NOT YET DEFINED, in future: session-cookie
+  // $expire = false: NOT YET DEFINED, in future: never expires (set some max value)
+  // use .del to expire a cookie!
+  set $expire(d) { this._exp = d && new Date((d|0)>0 ? Date.now()+d*1000. : (d|0)<0 ? Date.now()-d*1000.*3600*24*366 : d).toUTCString() }
 
   get $()	{ return this._val }
   set $(v)	{ return this._put(v) }
@@ -1643,13 +1655,14 @@ const UrlState = (x => x())(function(){
 
       keeper = new Keeper(set, change);
     }
-  function buttons(name, el, set, del)
+  function buttons(name, el, set, del, expire)
     {
+      if (expire === void 0) expire = -1;
       name	= name || 'state';
       el	= E(el || name);
       const c	= el.BUTTON.text(set || 'set').on('click', _ => UrlState.set());
       const d	= el.BUTTON.text(del || 'del').on('click', _ => UrlState.del());
-      run.COOKIE(name).on(a => { d.disabled(!a); c.$class = { green8:!!a, red8:!a }; d.$class = { grey8:!a } }).trigger();
+      run.COOKIE({name, expire}).on(a => { d.disabled(!a); c.$class = { green8:!!a, red8:!a }; d.$class = { grey8:!a } }).trigger();
       return this;
     }
 
