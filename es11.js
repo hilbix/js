@@ -1468,7 +1468,7 @@ class Cookie extends OnOff
       if (e)
         e	= `; Expires=${e}`;
 
-      c = `${this.name}=${c}${d}${e}${n}${p}${s}`;
+      c = `${this._name}=${c}${d}${e}${n}${p}${s}`;
       D('Cookie', c);
 
       this._val		= v;
