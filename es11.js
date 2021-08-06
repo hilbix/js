@@ -849,8 +849,14 @@ class _E extends _E0
   href(href)		{ return this.attr({href}) }
   id(id)		{ return this.attr({id}) }
   name(name)		{ return this.attr({name}) }
-  attr(a)		{ if (a) for (const b in a) for (const e of this.$all) if (a[b] === void 0) e.removeAttribute(b); else e.setAttribute(b, a[b]); return this }
-  style(a)		{ if (a) for (const b in a) for (const e of this.$all) e.style[b] = a[b]; return this }
+
+  // .attr({attr:val}) to set DOM attribute on TAG
+  // .attr({attr:void 0}) removes DOM attr again
+  attr(a)		{ if (a) for (const b in a) if (a[b] === void 0) for (const e of this.$all) e.removeAttribute(b); else for (const e of this.$all) e.setAttribute(b, a[b]); return this }
+  // like .attr() but for style.  As .style['--custom']='1px' does not work this uses .setProperty()
+  // Note that 'prop' can be any of both variants, like 'backgroundColor' and 'background-color' (in Chrome, not tested with FF yet)
+  style(a)		{ if (a) for (const b in a) if (a[b] === void 0) for (const e of this.$all) e.style.removeProperty(b); else for (const e of this.$all) e.style.setProperty(b, a[b]); return this }
+
   // prepend/append to parent
   get prep()		{ return (...c) => { const n=this.$, f=FRAGMENT(); if (n) for (const a of c) for (const b of E(a)) f.append(b); n.prepend(f); return this } }
   set prep(c)		{ this.prep(c) }
