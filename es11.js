@@ -124,9 +124,11 @@ const sleepErr	= ms => e => SleEp(ms, e);					// .catch(sleepErr(10)).catch(..)
 
 
 // fetch() promises
-const Fetch	= (u, o) => fetch(u,o).then(r => r.ok ? r : Promise.reject(`${r.status}: ${r.url}`))
-const Get	= u => Fetch(u, { cache:'no-cache' })
-const _MTFUD	= (m,t,f) => (u,d) => Fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':t}, body:f ? f(d) : d })
+// p is _ => fetchProgress(_, ..) from below, use like:
+// Get(URL, _ => fetchProgress(_, fn, args..))
+const Fetch	= (u,o,p) => fetch(u,o).then(r => r.ok ? r : Promise.reject(`${r.status}: ${r.url}`))
+const Get	= (u,p) => Fetch(u, { cache:'no-cache' },p)
+const _MTFUD	= (m,t,f) => (u,d,p) => Fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':t}, body:f ? f(d) : d }, p)
 const PostText	= _MTFUD('POST', 'text/plain')
 const PutText	= _MTFUD('PUT', 'text/plain')
 const _MUJ	= m => _MTFUD(m, 'application/json', JSON.stringify)
@@ -137,6 +139,42 @@ const _Json	= p => p.then(r => r.status==200 ? r.json() : THROW(r.status))
 const _Text	= p => p.then(r => r.status==200 ? r.text() : THROW(r.status))
 const GetText	= u => _Text(Get(u))
 const GetJSON	= u => _Json(Get(u))
+
+// Why isn't something similar already in the spec as an option?
+// fetch('url').then(_ => fetchProgress(_, callback, ...args)).then(_ => _.text())
+// Calls callback(...args, pos, total, orginal-response)
+// total is void 0 (AKA: undefined) if content-length header missing
+// Why is it so complex to make it somewhat efficient?
+// Following looks a bit too much like Java for my taste .. sorry:
+// https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams#reading_the_stream
+const fetchProgress = (_, fn, ...args) =>
+  {
+    const reader = _.body.getReader();
+    const cl     = _.headers.get('content-length');
+    const total  = cl === void 0 ? cl : (cl|0);
+
+    let pos = 0;
+    const start = controller =>
+      {
+        return pump();
+        function pump()
+          {
+            fn(...args, pos, total, _);
+            return reader.read().then(chunk =>
+              {
+                if (chunk.done)
+                  {
+                    controller.close();
+                    return;
+                  }
+                pos += chunk.value.length;
+                controller.enqueue(chunk.value);		// this can be quite big, right?
+                return pump();
+              });
+          }
+      };
+    return new Response(new ReadableStream({start}), _);
+  };
 
 // Escape URI and (only the problematic) HTML entities
 // As there are gazillions of named HTML entities (and counting)
