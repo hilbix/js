@@ -677,7 +677,7 @@ class Callable extends Function
 // const input = E().DIV.text('hello world ').INPUT;
 class _E0 extends Callable
   {
-  __e; __E; __d
+  __e; __E = []; __d		// when renaming __E, do not miss reference in definition of 'const E' below!
 
   constructor(e)	{ super(); this.__e = (this.__E = e ? mkArr(e) : [])[0] || FRAGMENT() }
   get $()		{ return this.__e; }
@@ -938,7 +938,7 @@ const E0 = _ => _ ? E(_) : void 0;	// or null?
 const E = (function(){
   const weak_refs = new WeakMap();
 
-  Object.defineProperty(fn, '_E', { value:[] });
+  Object.defineProperty(fn, '__E', { value:[] });		// XXX TODO XXX does this work for .#E as well?
 
   // This is not perfect, as it copies functions,
   // which do not work.  But we ignore this for now.
