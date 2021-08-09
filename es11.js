@@ -942,11 +942,13 @@ const E = (function(){
 
   // This is not perfect, as it copies functions,
   // which do not work.  But we ignore this for now.
-  Object.entries(Object.getOwnPropertyDescriptors(_E.prototype)).forEach(_ =>
-    {
-      const get = _[1].get;
-      Object.defineProperty(fn, _[0], get ? { get } : { value:_[1].value });
-    });
+  for (let klass=_E; klass?.prototype; klass = Object.getPrototypeOf(klass))
+    Object.entries(Object.getOwnPropertyDescriptors(klass.prototype)).forEach(_ =>
+      {
+        const get = _[1].get;
+        if (!Object.hasOwnProperty.call(fn, _[0]))
+          Object.defineProperty(fn, _[0], get ? { get } : { value:_[1].value });
+      });
 
   return fn;
 
