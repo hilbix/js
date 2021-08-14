@@ -65,7 +65,7 @@ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'
 const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
 //E() see below
 //Get()	fetch via 'GET'
-const isFunction= f => typeof v === 'function';			// https://stackoverflow.com/a/6000009
+const isFunction= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
 const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
 const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
 const isArray	= a => Array.isArray(a);
