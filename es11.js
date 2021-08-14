@@ -365,21 +365,68 @@ const _run_once = _ => (f => f(_))(later =>
 const once_per_cycle = _run_once(_ => setTimeout(_));
 const once_per_frame = _run_once(_ => window.requestAnimationFrame(_));
 
-// Example:
+// Examples:
 // for (let i=0; ++i<1000000; ) fetch(`http://example.com/?${i}`);	// crashes the Tab
 // const fetch50 = Semaphore(50, fetch);				// repair
 // for (let i=0; ++i<1000000; ) fetch50(`http://example.com/?${i}`);	// works
-const Semaphore = (max, fn, ...a1) =>
+/*
+  const x = Semaphore(
+	_ => { console.log('running', _.run); return 10 },
+	(v,ms) => new Promise(ok => setTimeout(ok, ms, {v, ms})).then(_ => console.log('resolved', _)),
+	'waiting was'
+	);
+ for (let i=100; --i>0; x(Math.random()*10000|0));
+*/
+// Semaphore() returns with following properties:
+// .max 	parameter 1  passed to Semaphore (your chosen max value or function)
+// .fn		parameter 2  passed to Semaphore (the function protected by Semaphore)
+// .args	parameter 3+ passed to Semaphore (the first arguments to .fn)
+//
+// if 'max' is a function, it can dynamically decide how much work to do in parallel.
+// This function is always called when something happens on the Semaphore, like some work was added or has finished.
+// ===> implement your progress bar in max()
+// It gets passed a single value, the Semaphore(), with following properties:
+// .run 	the number of currently running stuff
+// .wait	the number of waiting stuff
+// .cancel(N,M)	*UNTESTED* cancels waiting tasks with message M.  By default this is the array of the second arguments passed to fn.
+// .cancel()	cancels all
+// .cancel(+N)	cancels the first N on the waiting list
+// .cancel(-N)	cancels the last  N on the waiting list
+// JS has no support to abort async functions, hence there is no way to cancel running functions.
+// If some good idea on how to cancel async functions comes up, some neccessary bookkeeping might be needed.
+const Semaphore = (max, fn, ...args) =>
   {
     let run = 0;
     const waits = [];
-    function next(x)
+    const get = !isFunction(max) ? () => max : () =>
       {
-        if (run<max && waits.length)
-          waits.shift()(++run);
-        return x;
+        return max(ret);
       }
-    return (...a2) => next(new Promise(ok => waits.push(ok)).then(() => fn(...a1,...a2)).finally(_ => run--).finally(next));
+    const next = _ =>
+      {
+        ret.wait = waits.length;
+        if (run<get() && waits.length)
+          {
+            const x = waits.shift();
+            ret.run	= ++run;
+            ret.wait	= waits.length;
+            x[0](x[2]);
+          }
+        return _;
+      }
+    const cancel = (n,msg) =>
+      {
+        let _;
+        if (n === void 0) n	= waits.length;
+        for (n = n|0; n<0 && (_ = waits.pop())  ; _++) _[1](c || _[2]);
+        for (       ; n>0 && (_ = waits.shift()); _--) _[1](c || _[2]);
+      }
+    const ret = (..._) => next(new Promise((ok,ko) => waits.push([ok,ko,_])).then(() => fn(ret.args,_)).finally(() => ret.run = --run).finally(next));
+    ret.max	= max;
+    ret.fn	= fn;
+    ret.args	= args;
+    ret.cancel	= cancel;
+    return ret;
   }
 
 // ON-Event class (in the capture phase by default)
