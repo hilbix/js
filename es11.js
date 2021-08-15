@@ -52,7 +52,7 @@ const DEPRECATED = (_ => (...a) => { if (_) CONSOLE([_--].concat(a), new Error(`
 
 // sorted ABC, commented names are below
 const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
-const C = (fn,...a) => function (...b) { return fn(...a,...b) }	// Curry (allows to bind this)
+const C = (fn,...a) => function (...b) { return _FPC.call(fn,this,...a,...b) }	// Curry (allows to bind this)
 const C$ = (fn,self,...a) => C$$(fn,self,a);			// Curry Call (with self)
 const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);	// Curry Apply (with self)
 
