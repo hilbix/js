@@ -436,7 +436,7 @@ const Semaphore = (max, fn, ...args) =>
   }
 
 // ON-Event class (in the capture phase by default)
-// If the handling returns trueish, processing of the event stops (this is the exact opposite of old DOM).
+// If the handling returns trueish, processing of the event stops (this is the exact opposite of old DOM AND include additional handlers).
 // `this` is set to the ON-instance within the function (if not bound elsewhere)
 // calls fn(event, ...a)	for: ON('event').add(fn, ...a).attach(E(element))
 // calls fn(event, elem, ...a)	for: elem = E(element).on(fn, ...a)
@@ -735,7 +735,7 @@ class _E0 extends Callable
 
   constructor(e)	{ super(); this.__e = (this.__E = e ? mkArr(e) : [])[0] || FRAGMENT() }
   get $()		{ return this.__e; }
-  get $all()		{ return this.__E; }
+  get $all()		{ return this.__E; }		// remove in favor of Symbol.iterator
 
   get $data()		{ return this.__d || (this.__d = {}); }
   data(x,y)		{ this.$data[x]=y; return this }
@@ -984,6 +984,9 @@ class _E extends _E0
   Loaded()		{ return Promise.allSettled(Array.from(this.MAP(_ => _.decode()))) }
   // Scroll into view as soon as mapped: img.Loaded().then(_ => img.show())
   show(mode)		{ this.$?.scrollIntoView(mode || {block:'nearest'}); return this }
+  // hide() should be implemented using CSS:
+  // .hide { display:block !important }
+  // then: .setclass({hide:bool});
   };
 
 // Create a DOM Element (class _E below).
