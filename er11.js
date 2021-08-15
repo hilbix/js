@@ -7,8 +7,8 @@
 // <script src="er11.js" data-append="element-id" data-appendms="20000"></script>
 // <script src="er11.js" data-debug="console-prefix"></script>
 
-// CATCH(fn): calls fn(e,j) on errors, j is a JSON serializable object
-const CATCH = fn =>
+// __CATCH__(fn): calls fn(e,j) on errors, j is a JSON serializable object
+const __CATCH__ = fn =>
   {
     // a global catch for errors and unhandled rejections
     let w = e => { const v=e.error || e.reason; try {
@@ -28,12 +28,12 @@ const CATCH = fn =>
 if (document.currentScript.dataset?.debug)
   // Actually this is a BUG for environments lacking console.
   // We should forward this problem to the other error handlers.
-  (f => f(document.currentScript.dataset.debug))(s => CATCH((e,d) => console.log?.(s,e,d)));
+  (f => f(document.currentScript.dataset.debug))(s => __CATCH__((e,d) => console.log?.(s,e,d)));
 
 // Append <PRE> to some element: data-append="element-id"
 if (document.currentScript.dataset?.append)
   (f => f(document.currentScript.dataset.append, document.currentScript.dataset?.appendms))((id,ms) =>
-    CATCH((e,d) =>
+    __CATCH__((e,d) =>
       {
         const f = r => (f => f(document.getElementById(id)))(o =>
 //            { console.log('f', o,r,ms); return (
@@ -59,7 +59,7 @@ if (document.currentScript.dataset?.post)
   (f => f(new URL(document.currentScript.dataset.post,
                   new URL(document.currentScript.url, window.location))
          ,document.currentScript.dataset.tag))((u,t) =>
-    CATCH((_,e) => fetch(u,
+    __CATCH__((_,e) => fetch(u,
       { cache:'no-cache'
       , method:'POST'
       , headers:{'Content-Type':'application/json'}
