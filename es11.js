@@ -43,6 +43,7 @@
 // <script src="es11.js" data-debug></script>
 // data-debug enables debugging
 let DEBUGGING = document.currentScript?.dataset?.debug;		// you can change this later
+const DispatchEvent = async e => await window.dispatchEvent(e);	// do it asynchronously to not stop execution
 
 const _FPA = Function.prototype.apply;
 const _FPC = Function.prototype.call;
@@ -57,6 +58,11 @@ const C$ = (fn,self,...a) => C$$(fn,self,a);			// Curry Call (with self)
 const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);	// Curry Apply (with self)
 
 const CA = C$$, CC = C$;	// deprecated
+
+// Report some error, but do not terminate execution (just returning VOID)
+const CATCH = function(fn,...a)	{ CATCH$$(fn,this,a) }		// class { CATCH=CATCH } and then: this.CATCH(this.fn, args..)
+const CATCH$ = (fn,self,...a)	=> CATCH$$(fn,self,a)		// this.fn(args..) becomes CATCH$(this.fn, this, args..)
+const CATCH$$ = (fn,self,a)	=> { try { return _FPC.call(fn,self,...a) } catch (e) { DispatchEvent(e) } }
 
 //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
 const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
@@ -447,8 +453,9 @@ class ON
       this.__fn		= [];
     }
 
-  add(fn, ...a)		{ return this.add$$(fn,a) }
-  add2(fn, ...a)	{ return this.add$$(function (...a) { fn(this,...a) }, a) }
+  CATCH = CATCH
+  add(fn, ...a)		{ return this.add$$(fn,a) }					// fn(ev,...a) with this set
+  add2(fn, ...a)	{ return this.add$$(function (...a) { fn(this,...a) }, a) }	// fn(ev,this,...a) without this set
   add$$(fn, a)		{ this.__fn.push([fn,a]); return this }
 //remove(fn, ...a)	{ this.__fn.remove([fn,a]); return this }	does not work this way
 
@@ -456,7 +463,7 @@ class ON
     {
       this.$ = ev;
       for (const a of this.__fn)
-        if (a[0].call(this,ev,...a[1]))
+        if (this.CATCH(a[0], ev, ...a[1]))	// do not bail out on error, just report
           {
             ev.preventDefault()
             return false;
@@ -737,6 +744,18 @@ class _E0 extends Callable
   remove()		{ return this.rm() }
   clr()			{ let a; for (const e of this.__E) while (a = e.firstChild) a.remove(); return this }
 
+  // Note that the handler must return truish to stop the handling of the event.
+  // This is not only kind opposite of what DOM did, it also stops handling of all other event handlers added to the ON class.
+  // (There ususally is only one, except when you use .ON().add())
+  ON(type, fn, ...a)	{ return type ? new ON(type).add(fn, this, ...a).attach(this) : void 0 }
+  on(...a)		{ this.ON(...a); return this }
+  // onme() and ONme() only fire on the original elements it was directly attached to and not for any children
+  ONme(type, fn, ...a)	{ return this.ON(type, _ => _.target in this.__E ? fn(_, this, ...a) : void 0) }
+  onme(...a)		{ this.ONTHIS(...a); return this }
+  // onb() and ONb use Bubbling phase, so are on reverse order
+  ONb(type, fn, ...a)	{ return type ? new ON(type, false).add(fn, this, ...a).attach(this) : void 0 }
+  onb(...a)		{ this.ONB(...a); return this }
+
   *[Symbol.iterator]()	{ for (const e of this.__E) yield e }
   *MAP(fn, ...a)	{ for (const e of this.__E) yield fn(e, ...a) }
   Run(fn, ...a)		{ return P(fn, this, ...a) }
@@ -926,9 +945,6 @@ class _E extends _E0
   UPDATE(...a)		{ return this._upd[0](this, ...this._upd[1], ...a) }
   update(...a)		{ this.UPDATE(...a); return this }
   UPD(...a)		{ return _ => { this.UPDATE(...a, _); return _ } }	// Promise.resolve(1).then(el.UPD()).then(_ => _===1)
-
-  ON(type, fn, ...a)	{ return new ON(type).add(fn, this, ...a).attach(this) }
-  on(...a)		{ this.ON(...a); return this }
 
   target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
   href(href)		{ return this.attr({href}) }
