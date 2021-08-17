@@ -896,8 +896,8 @@ class _E0 extends Callable
   ON(type, fn, ...a)	{ return type ? new ON(type).add(fn, this, ...a).attach(this) : void 0 }
   on(...a)		{ this.ON(...a); return this }
   // onme() and ONme() only fire on the original elements it was directly attached to and not for any children
-  ONme(type, fn, ...a)	{ return this.ON(type, _ => _.target in this.__E ? fn(_, this, ...a) : void 0) }
-  onme(...a)		{ this.ONTHIS(...a); return this }
+  ONme(type, fn, ...a)	{ return this.ON(type, _ => this.__E.includes(_.target) ? fn(_, this, ...a) : void 0) }
+  onme(...a)		{ this.ONme(...a); return this }
   // onb() and ONb use Bubbling phase, so are on reverse order
   ONb(type, fn, ...a)	{ return type ? new ON(type, false).add(fn, this, ...a).attach(this) : void 0 }
   onb(...a)		{ this.ONB(...a); return this }
