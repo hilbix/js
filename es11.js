@@ -566,7 +566,7 @@ const Semaphore = (max, fn, ...args) =>
             D('Acquire', 'cont');
           }
       }
-    const ret = (..._) => next(new Promise((ok,ko) => waits.push([ok,ko,_])).then(() => (ret.fn ? ret.fn : (...a)=>a)(ret.args,_)).finally(() => next(upd(-1))));
+    const ret = (..._) => next(new Promise((ok,ko) => waits.push([ok,ko,_])).then(() => (ret.fn ? ret.fn : (...a)=>a)(...ret.args,..._)).finally(() => next(upd(-1))));
     ret.max	= max;
     ret.fn	= fn;
     ret.args	= args;
