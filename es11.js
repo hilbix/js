@@ -423,6 +423,12 @@ const once_per_frame = _run_once(_ => window.requestAnimationFrame(_));
 // .Acquire()	acquires 1.  returns a Promise which resolves to the "release()" function.
 // .Acquire(0)	acquires all free (at least 1).
 //		release() or release(0) releases all Acquired, release(1) only releases 1.  Throws if "overreleased"
+// .Wait(N)	wait for N Releases. .Wait(0) returns immediately if nothing is running, else waits for 1 Release
+// .Max(N)	wait until .count is not more than N, .Max() is .Max(0)
+// .Min(N)	wait until .count is at least N, .Min() is .Min(0)
+//		Min(0) waits until something happens on the Semaphore
+//		Min(-1) waits until a Release or Acquire
+//		Min(-2) waits until an Acquire
 //
 // If .max is a function, it is called with the Semaphore (and optional .Acquire() args) can dynamically return how much work to do in parallel.
 // If it returns a Promise, execution halts until the Promise resolves.  If it rejects or .max() throws, this is as if it returns 1
@@ -435,17 +441,24 @@ const Semaphore = (max, fn, ...args) =>
     const D = DD('Semaphore');
     let run = 0;
     let maxing;		// set while run.max() is awaited
-    let waiting;
+    let waiting, cntwait;
     const waits = [];
     const upd = n =>
       {
-        n	= n|0;
+        n		= n|0;
         ret.count	= run += n;
         ret.wait	= waits.length + (waiting?.count|0);
         if (n<0 && waiting)
           {
-            waiting.ok();		// reenable all waiting .Acquires
-            waiting = void 0;
+            const ok	= waiting.ok;
+            waiting	= void 0;
+            ok(n);		// reenable all waiting .Acquires
+          }
+        if (cntwait)
+          {
+            const ok	= cntwait.ok;
+            cntwait	= void 0;
+            ok(n);
           }
       }
     const check = _ =>
@@ -539,6 +552,44 @@ const Semaphore = (max, fn, ...args) =>
           }
         return release_function(n);
       }
+    const Max = async N =>
+      {
+        N = N|0;
+        while (ret.count>N)
+          {
+            if (!cntwait)
+              cntwait	= PO();
+            await cntwait.p;
+          }
+        return ret;
+      }
+    const Min = async N =>
+      {
+        N = N|0;
+        if (N<=0 || ret.count<N)
+          do
+            {
+              if (!cntwait)
+                cntwait	= PO();
+              const n = await cntwait.p;
+              if (N<0 && !n || N<-1 && n<0)
+                continue;
+            } while (ret.count<N);
+        return ret;
+      }
+    const Wait = async N =>
+      {
+        N = N|0;
+        if (N<=0 && !ret.count) return ret;
+        do
+          {
+            if (!waiting)
+              waiting = PO();
+            if ((await waiting.p)>=0)
+              continue;
+          } while (--N>0);
+        return ret;
+      }
 
     // Sadly I found no good way to reuse things here
     const Acquire = async (N,...a) =>
@@ -575,6 +626,9 @@ const Semaphore = (max, fn, ...args) =>
     ret.start	= () => { if (maxing===true) maxing=false; return next(ret) }
     ret.try	= acquire;
     ret.Acquire	= Acquire;
+    ret.Max	= Max;		// wait for max running
+    ret.Min	= Min;		// wait for N started
+    ret.Wait	= Wait;		// wait for N releases
 //    ret.release	= release;	// I really have no good idea how to implement this the sane way in an async world
 // XXX TODO XXX await sem.aquire(2) /* not saving return */; ..; sem.release(1); ..; sem.release(1); ..; sem.release(1) ==> throws
 // XXX TODO XXX .abort() to abort running Promises (if there is some clever way)
