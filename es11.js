@@ -1166,6 +1166,7 @@ class _E extends _E0
   before(...c)		{ const n=this.$; if (n) for (const a of c) for (const b of E(a)) n.before(b); return this }
   after(...c)		{ let n=this.$; if (n) for (const a of c) for (const b of E(a)) { n.after(b); n=b }; return this }
   attach(p)		{ E(p).add(this); return this }
+  pretach(p)		{ E(p).prep(this); return this }
 
   get FIRST()		{ return E0(this.$?.firstChild) }
   get LAST()		{ return E0(this.$?.lastChild) }
