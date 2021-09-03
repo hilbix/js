@@ -5,7 +5,7 @@ make_task:
   cirrusfix_script: git fetch origin tino
   git_script: git submodule update --init --recursive
   make_script: make
-  diff_script: git status
+  diff_script: git status -v && git diff
   update_script: make update
   test_script: make test
 
