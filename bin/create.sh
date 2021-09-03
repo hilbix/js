@@ -10,7 +10,7 @@ MAXSIZE=50000
 o() { "$@" || exit; }
 
 REMOTE="$(git config --get remote.origin.url)"
-REMOTE="${REMOTE/\/*@/\/\/}"	# remove confusing access token if any
+REMOTE="${REMOTE/\/\/*@/\/\/}"	# remove confusing access token if any
 
 for a;
 do
