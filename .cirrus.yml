@@ -2,6 +2,7 @@ container:
   image: gcc:latest
 
 make_task:
+  cirrusfix_script: git remote update -p
   git_script: git submodule update --init --recursive
   make_script: make
   update_script: make update
