@@ -79,8 +79,9 @@ Documentation?
 
 Submodule links missing.
 
-- [This is a github bug](https://github.community/t5/How-to-use-Git-and-GitHub/Support-Linking-Relative-URL-s-on-submodules/td-p/24650)
-- Try switching branches instead.
+- `git clone --recursive` works (tested with `git 1.20.1`)
+- [This seems to be a known closed but but still not fully resolved GitHub bug](https://github.community/t5/How-to-use-Git-and-GitHub/Support-Linking-Relative-URL-s-on-submodules/td-p/24650).
+- I cannot use `../js.git` as this will be wrong in almost all situations except my lonely place at GitHub here.
 
 
 License?
