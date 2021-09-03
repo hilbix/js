@@ -1,6 +1,6 @@
 [submodule "tino"]
 	path = tino
-	url = ./
+	url = .
 	branch = tino
 [submodule "libsodium.master"]
 	path = libsodium.master
