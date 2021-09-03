@@ -2,9 +2,9 @@
 	path = tino
 	url = .
 	branch = tino
-[submodule "libsodium.master"]
+[submodule "master.libsodium"]
 	path = master.libsodium
 	url = https://github.com/jedisct1/libsodium.js.git
-[submodule "json-js.master"]
+[submodule "master.json-js"]
 	path = master.json-js
 	url = https://github.com/douglascrockford/JSON-js.git
