@@ -63,7 +63,7 @@ Reserved names:
 ## Hacks/Quirks
 
 - Submodules branches are currently a hack:
-  - If the submodule is named `name.BRANCH`, then the branch `BRANCH` is used.
+  - If the submodule is named `BRANCH.name`, then the branch `BRANCH` is used.
   - If the submodule is named `name` (without a dot), then the branch `name` is used.
   - In future, perhaps I will parse `.gitmodules` to take the branch from there.
 
