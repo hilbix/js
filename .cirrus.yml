@@ -2,7 +2,7 @@ container:
   image: gcc:latest
 
 make_task:
-  cirrusfix_script: git fetch origin tino
+  cirrusfix_script: git fetch origin tino && git branch tino FETCH_HEAD
   git_script: git submodule update --init --recursive
   make_script: make
   diff_script: git status -v && git diff
