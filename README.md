@@ -4,6 +4,9 @@
 >
 > If in doubt, either create your own `js*` or do not use `all.js` and use the individual snippets.
 
+Note:
+
+- Current development mostly is in branch [es11](../../tree/es11)
 
 # Javascript Snippets
 
