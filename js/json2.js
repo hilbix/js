@@ -1,1 +1,1 @@
-../tino/json2.js
+../json-js.master/json2.js
