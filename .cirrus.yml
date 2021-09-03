@@ -2,7 +2,7 @@ container:
   image: gcc:latest
 
 make_task:
-  cirrusfix_script: git rev-parse HEAD && git rev-parse tino && git checkout tino && git rev-parse HEAD && git checkout master && git rev-parse HEAD
+  cirrusfix_script: git rev-parse --verify HEAD && git rev-parse --verify tino && git checkout --no-guess tino && git rev-parse --verify HEAD && git checkout --no-guess master && git rev-parse --verify HEAD
   git_script: git submodule update --init --recursive
   make_script: make
   update_script: make update
