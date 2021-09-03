@@ -1,1 +1,1 @@
-../json-js.master/json2.js
+../master.json-js/json2.js

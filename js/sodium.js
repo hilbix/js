@@ -1,1 +1,1 @@
-../libsodium.master/dist/browsers/sodium.js
+../master.libsodium/dist/browsers/sodium.js
