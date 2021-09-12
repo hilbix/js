@@ -968,6 +968,9 @@ class _E0 extends Callable
   forEach(...a)		{ return this.run(...a) }
 
   debug(...a)		{ console.log('debug', ...a, this.__E); return this }
+
+  if(bool,fn,...a)	{ return this.cond(bool,fn,void 0,...a) }
+  cond(bool,f1,f2,...a) { return (bool ? (f1 && f1(this,...a)) : (f2 && f2(this,...a))) || this }
   };
 
 class _E extends _E0
@@ -1128,6 +1131,7 @@ class _E extends _E0
   get OPTION()		{ return this._MK('option') }
   get FORM()		{ return this._MK('form') }
   get LABEL()		{ return this._MK('label') }
+  get IFRAME()		{ return this._MK('iframe') }
 
   get TT()		{ return this._MK('tt') }
   get CODE()		{ return this._MK('code') }
