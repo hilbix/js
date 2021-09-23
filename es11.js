@@ -101,59 +101,65 @@ const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(I
 // everything else is too browser specific
 //
 // Promise.reject('throw').catch(THROW).catch(e => bug(e.message, e.stack))
-const THROW = e => { e = e instanceof Error ? e : e instanceof ErrorEvent ? new Error(e.message, e.filename, e.lineno, e.colno) : new Error(e); D('ERROR', e); throw e }
+/* */ const THROW = e => { e = e instanceof Error ? e : e instanceof ErrorEvent ? new Error(e.message, e.filename, e.lineno, e.colno) : new Error(e); D('ERROR', e); throw e }
 
 // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
-const PO = () => { const o={}; o.p = new Promise((ok,ko) => { o.ok=ok; o.ko=ko }); return o }	// PromiseObject
-const PR = Promise.resolve();	// PRomise
-const PE = Promise.reject();	// PromisErr
-PE.catch(DONOTHING);		// shutup "Uncaught in Promise" due to PE
-const P = (fn,...a) => PR.then(() => fn(...a));		// invoke fn(a) in microtask: P(fn,a).then(..).catch(..). See also single_run()
-const P$ = (fn,self,...a) => P$$(fn,self,a);		// invoke fn(a) with this===self
-const P$$ = (fn,self,a) => PR.then(() => _FPA.call(fn, self, a));	// same as P$ but with arguments in array (for optimization)
+/* */ const PO = () => { const o={}; o.p = new Promise((ok,ko) => { o.ok=ok; o.ko=ko }); return o }	// PromiseObject
+/* */ const PR = Promise.resolve();			// PRomise
+/* */ const PE = Promise.reject();			// PromisErr  WARNING: Only use PE instead of Promise.reject() if you want to suppress the "Uncaught in Promise" error by default!
+/* */ PE.catch(DONOTHING);				// shutup "Uncaught in Promise" due to PE
+/* */ const P = (fn,...a) => PR.then(() => fn(...a));	// invoke fn(a) in microtask: P(fn,a).then(..).catch(..). See also single_run()
+/* */ const P$ = (fn,self,...a) => P$$(fn,self,a);	// invoke fn(a) with this===self
+/* */ const P$$ = (fn,self,a) => PR.then(() => _FPA.call(fn, self, a));	// same as P$ but with arguments in array (for optimization)
+      //v PostJSON PostText
+      //v PutJSON  PutText
+/* */ const PC = P$;	// deprecated
 
-const PC = P$;	// deprecated
-
-const fromJ	= o => JSON.parse(o);
-const toJ	= o => JSON.stringify(o);
-const sortJ	= (ob,sort,space) => JSON.stringify(ob	// sorted JSON.stringify, see https://stackoverflow.com/a/43636793
+/* */ const fromJ	= o => JSON.parse(o);
+/* */ const toJ	= o => JSON.stringify(o);
+/* */ const sortJ	= (ob,sort,space) => JSON.stringify(ob	// sorted JSON.stringify, see https://stackoverflow.com/a/43636793
   , (k,v) =>
     (v instanceof Object && !(v instanceof Array || v instanceof Date || v instanceof Function))
     ? Object.keys(v).sort(sort).reduce((x,y) => (x[y] = v[y], x), {})
     : v
   , space);
 
-const SleeP	= (ms,v) => new Promise(ok => setTimeout(ok, ms, v));		// await SleeP(10).then(..)
-const SleEp	= (ms,e) => new Promise((ok,ko) => setTimeout(ko, ms, e));	// await SleEp(10).catch(..)
-const sleepFn	= ms => r => SleeP(ms, r);					// .then(sleepFn(10)).then(..)
-const sleepErr	= ms => e => SleEp(ms, e);					// .catch(sleepErr(10)).catch(..)
-
+/* */ const SleeP	= (ms,v) => new Promise(ok => setTimeout(ok, ms, v));		// await SleeP(10).then(..)
+/* */ const SleEp	= (ms,e) => new Promise((ok,ko) => setTimeout(ko, ms, e));	// await SleEp(10).catch(..)
+/* */ const sleepFn	= ms => r => SleeP(ms, r);					// .then(sleepFn(10)).then(..)
+/* */ const sleepErr	= ms => e => SleEp(ms, e);					// .catch(sleepErr(10)).catch(..)
 
 // fetch() promises
 // p is _ => fetchProgress(_, ..) from below, use like:
 // Get(URL, _ => fetchProgress(_, fn, args..))
-const Fetch	= (u,o,p) => fetch(u,o).then(r => r.ok ? r : Promise.reject(`${r.status}: ${r.url}`))
-const Get	= (u,p) => Fetch(u, { cache:'no-cache' },p)
-const _MTFUD	= (m,t,f) => (u,d,p) => Fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':t}, body:f ? f(d) : d }, p)
-const PostText	= _MTFUD('POST', 'text/plain')
-const PutText	= _MTFUD('PUT', 'text/plain')
-const _MUJ	= m => _MTFUD(m, 'application/json', JSON.stringify)
-const PostJSON	= _MUJ('POST')
-const PutJSON	= _MUJ('PUT')
+/* */ const Fetch	= (u,o,p) => fetch(u,o).then(p || (_=>_)).then(r => r.ok ? r : Promise.reject(`${r.status}: ${r.url}`))
+/* */ const Get	= (u,p) => Fetch(u, { cache:'no-cache' }, p)
+/* */ const _MTFUD	= (m,t,f) => (u,d,p) => Fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':t}, body:f ? f(d) : d }, p)
+/* */ const PostText	= _MTFUD('POST', 'text/plain')
+/* */ const PutText	= _MTFUD('PUT', 'text/plain')
+/* */ const _MUJ	= m => _MTFUD(m, 'application/json', JSON.stringify)
+/* */ const PostJSON	= _MUJ('POST')
+/* */ const PutJSON	= _MUJ('PUT')
 
-const _Json	= p => p.then(r => r.status==200 ? r.json() : THROW(r.status))
-const _Text	= p => p.then(r => r.status==200 ? r.text() : THROW(r.status))
-const GetText	= u => _Text(Get(u))
-const GetJSON	= u => _Json(Get(u))
+/* */ const _Json	= p => p.then(r => r.status==200 ? r.json() : THROW(r.status))
+/* */ const _Text	= p => p.then(r => r.status==200 ? r.text() : THROW(r.status))
+/* */ const GetText	= (u,p) => _Text(Get(u,p))
+/* */ const GetJSON	= (u,p) => _Json(Get(u,p))
 
 // Why isn't something similar already in the spec as an option?
-// fetch('url').then(_ => fetchProgress(_, callback, ...args)).then(_ => _.text())
-// Calls callback(...args, pos, total, orginal-response)
-// total is void 0 (AKA: undefined) if content-length header missing
+//
+// Fetch('url').then(     fetch_progress  (callback, ...args)).then(_ => _.text())	// syntactic Sugar
+// Fetch('url').then(_ => FetchProgress(_, callback, ...args)).then(_ => _.text())
+//
+// Calls callback(...args, pos, total, original_response) with this==original_response
+// total is void 0 (AKA: undefined) if Content-Length header missing
+// original-response is the _ above, also passed as this
+//
 // Why is it so complex to make it somewhat efficient?
 // Following looks a bit too much like Java for my taste .. sorry:
 // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams#reading_the_stream
-const fetchProgress = (_, fn, ...args) =>
+const fetch_progress = (...a) => _ => FetchProgress(_, ...a)
+const FetchProgress = (_, fn, ...args) =>
   {
     const reader = _.body.getReader();
     const cl     = _.headers.get('content-length');
@@ -165,7 +171,7 @@ const fetchProgress = (_, fn, ...args) =>
         return pump();
         function pump()
           {
-            fn(...args, pos, total, _);
+            _FPC.call(fn, _, ...args, pos, total, _);
             return reader.read().then(chunk =>
               {
                 if (chunk.done)
