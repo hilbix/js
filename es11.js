@@ -975,8 +975,44 @@ class _E0 extends Callable
 
   debug(...a)		{ console.log('debug', ...a, this.__E); return this }
 
-  if(bool,fn,...a)	{ return this.cond(bool,fn,void 0,...a) }
-  cond(bool,f1,f2,...a) { return (bool ? (f1 && f1(this,...a)) : (f2 && f2(this,...a))) || this }
+  // if(bool,fn,args..) returns fn(this,args..) if bool is trueish, else returns this
+  if(bool,fn,...a)	{ return bool ? (fn(this,...a)||this) : this }
+
+  // cond(fna, a, fnb, b, fnc)		// .cond(fn) is ok, .cond() is ok, too.
+  // calls fna if a else fnb if b else fnc ..
+  // if fn returns falsey it falls through			// like a switch case
+  // if fn is void 0 when called, it "breaks" and returns this.	// like a switch break
+  // fn parameters are (this, bool) where bool is the parameter following fn in .cond() args
+  cond(...a)
+    {
+      for (let l;; a.shift())
+        {
+          const f = a.shift();
+          if (a.length && !l && !a[0]) continue;
+          // true bool or fallthrough or at list end
+
+          if (f === void 0) return this;	// break or list end without fn
+
+          const c = f(this, ...a);
+          if (c) return c;
+          l = true;				// !fn(this) fallthrough
+        }
+    }
+  async Cond(...a)
+    {
+      for (let l;; a.shift())
+        {
+          const f = a.shift();
+          if (a.length && !l && !a[0]) continue;
+          // true bool or fallthrough or at list end
+
+          if (f === void 0) return this;	// break or list end without fn
+
+          const c = await f(this, ...a);
+          if (c) return c;
+          l = true;				// !fn(this) fallthrough
+        }
+    }
   };
 
 class _E extends _E0
