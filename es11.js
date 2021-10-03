@@ -975,14 +975,35 @@ class _E0 extends Callable
 
   debug(...a)		{ console.log('debug', ...a, this.__E); return this }
 
-  // if(bool,fn,args..) returns fn(this,args..) if bool is trueish, else returns this
-  if(bool,fn,...a)	{ return bool ? (fn(this,...a)||this) : this }
+  // FNs are expected to return some E() or void 0.
+  // If they return a different truish, this is returned unchanged, so your code may break!
+  // if(bool,fn,args..) returns 'this', if bool or fn()'s return is falsish, else returns fn(this,args..)
+  // If(bool,fn,args..) ditto, but async
+  // iF(bool,fn,args..) returns bool && fn(this,args..)
+  // IF(bool,fn,args..) ditto, but async
+  // Sample use to suppress output of ${dump(usr)} if !usr:
+  // const usr = this.getUser();
+  // // in the first 3, usr -----vvv is a bit redundant ----------------vvv
+  // E('out').clr().text('H').if(usr, (_,u) =>       _.text(dump(u))  , usr).text('W');	// H${dump(usr)})W
+  // E('out').clr().text('H').if(usr, (_,u) =>   _.DIV.text(dump(u))  , usr).text('W');	// H<div>${dump(usr)}W
+  // E('out').clr().text('H').if(usr, (_,u) => { _.DIV.text(dump(u)) }, usr).text('W');	// HW<div>${dump(usr)}</div>
+  // E('out').clr().text('H').cond(   (_,u) => { _.DIV.text(dump(u)) }, usr).text('W');	// HW<div>${dump(usr)}</div>
+  // E('out').clr().text('H').run(    (_,u) => u?_.DIV.text(dump(u)):0, usr).text('W');	// HW<div>${dump(usr)}</div>
+  // // In the last two you can put this.getUser() there directly ------^^^, the last is a bit less readable
+  if(...a)		{ return       this.iF(...a) || this }	// returns this as default
+  async If(...a)	{ return await this.iF(...a) || this }	// async .if()
+  iF(bool,fn,...a)	{ return bool && fn(this,...a) }	// run fn and returns it's value if bool truish, else void 0
+  async IF(...a)	{ return await this.iF(...a) || this }	// returns async this as default
+  // .If(true,fn,...a) is a redundant form of .Run(fn,...a)
 
-  // cond(fna, a, fnb, b, fnc)		// .cond(fn) is ok, .cond() is ok, too.
-  // calls fna if a else fnb if b else fnc ..
+  // cond(fna, a, fnb, b, fnc..)	// you can call it as .cond(fn,a) .cond(fn) or even .cond() of course
+  // calls fna if a else fnb if b else fnc .. and so on
   // if fn returns falsey it falls through			// like a switch case
-  // if fn is void 0 when called, it "breaks" and returns this.	// like a switch break
+  // if fn is void 0, it "breaks" (if bool) and returns this.	// like a switch break
   // fn parameters are (this, bool) where bool is the parameter following fn in .cond() args
+  // The bool is AFTER the function, as .cond(bool) does not make any sense.
+  // .cond(fn) .cond(fn,bool) .cond(fn1,bool1,fn2) .cond(fn1,bool1,fn2,bool2) and so on is more straight forward than
+  // .cond(fn) .cond(bool,fn) .cond(bool1,fn1,fn2) .cond(bool1,fn1,bool2,fn2) and so on
   cond(...a)
     {
       for (let l;; a.shift())
@@ -998,6 +1019,7 @@ class _E0 extends Callable
           l = true;				// !fn(this) fallthrough
         }
     }
+  // async variant of Cond(), calling fns asynchronously
   async Cond(...a)
     {
       for (let l;; a.shift())
