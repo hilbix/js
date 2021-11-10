@@ -42,58 +42,58 @@
 
 // <script src="es11.js" data-debug></script>
 // data-debug enables debugging
-const DEBUGGING = this.DEBUGGING || document.currentScript?.dataset?.debug;	// you can change this later
+/* */ const DEBUGGING = this.DEBUGGING || document.currentScript?.dataset?.debug;	// you can change this later
 
-const DispatchEvent = async e => await window.dispatchEvent(e);			// do it asynchronously to not stop execution
-const _FPA = Function.prototype.apply;						// _FPA.call(fn,THIS,[args..])
+/* */ const DispatchEvent = async e => await window.dispatchEvent(e);			// do it asynchronously to not stop execution
+/* */ const _FPA = Function.prototype.apply;						// _FPA.call(fn,THIS,[args..])
 /*_*/ const _FPC = Function.prototype.call;						// _FPC.call(fn,THIS,args..)
 /*_*/ const DONOTHING = function(){}							// The "do nothing" DUMMY function
-const DEPRECATED = (_ => (...a) => { if (_) CONSOLE([_--].concat(a), new Error(`deprecation warning`)) })(100); // prints 100 occurances (hopefully with stacktrace)
+/* */ const DEPRECATED = (_ => (...a) => { if (_) CONSOLE([_--].concat(a), new Error(`deprecation warning`)) })(100); // prints 100 occurances (hopefully with stacktrace)
 /*_*/ const CONSOLE = this.CONSOLE || ((...a) => { console.log(...a) });		// returns void 0 for sure (and changeable)
 
 // mostly sorted by ABC, //^v NAME if NAME is displaced (^v is direction)
 
-const AsyncFun = Object.getPrototypeOf(async function(){}).constructor;
-const C = (fn,...a) => function (...b) { return _FPC.call(fn,this,...a,...b) }	// Curry (allows to bind this)
-const C$ = (fn,self,...a) => C$$(fn,self,a);					// Curry Call (with self)
-const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);		// Curry Apply (with self)
+/* */ const AsyncFun = Object.getPrototypeOf(async function(){}).constructor;
+/* */ const C = (fn,...a) => function (...b) { return _FPC.call(fn,this,...a,...b) }	// Curry (allows to bind this)
+/* */ const C$ = (fn,self,...a) => C$$(fn,self,a);					// Curry Call (with self)
+/* */ const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);		// Curry Apply (with self)
 
-const CA = C$$, CC = C$;	// deprecated
+/* */ const CA = C$$, CC = C$;	// deprecated
 
 // Report some error, but do not terminate execution (just returning VOID)
-const CATCH = function(fn,...a)	{ return CATCH$$(fn,this,a) }	// class { CATCH=CATCH } and then: this.CATCH(this.fn, args..)
-const CATCH$ = (fn,self,...a)	=> CATCH$$(fn,self,a)		// this.fn(args..) becomes CATCH$(this.fn, this, args..)
-const CATCH$$ = (fn,self,a)	=> { try { return _FPC.call(fn,self,...a) } catch (e) { DispatchEvent(new ErrorEvent('catched error', {error:e})) } }
+/* */ const CATCH = function(fn,...a)	{ return CATCH$$(fn,this,a) }	// class { CATCH=CATCH } and then: this.CATCH(this.fn, args..)
+/* */ const CATCH$ = (fn,self,...a)	=> CATCH$$(fn,self,a)		// this.fn(args..) becomes CATCH$(this.fn, this, args..)
+/* */ const CATCH$$ = (fn,self,a)	=> { try { return _FPC.call(fn,self,...a) } catch (e) { DispatchEvent(new ErrorEvent('catched error', {error:e})) } }
       //^ CONSOLE
 
-//const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
-const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
-const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
+/* */ //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
+/* */ const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
+/* */ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
       //v defArr
       //^ DEPRECATED
-const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
+/* */ const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
       //^ DONOTHING
       //v E
       //v Fetch FetchProgress fetchProgress
       //v fromJ
       //v Get GetJSON GetText
       //v IGN
-const isFunction= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
-const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
-const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
-const isArray	= a => Array.isArray(a);
-const isInt	= i => Number.isInteger(i);
+/* */ const isFunction= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
+/* */ const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
+/* */ const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
+/* */ const isArray	= a => Array.isArray(a);
+/* */ const isInt	= i => Number.isInteger(i);
 
-const mkArr = x => Array.isArray(x) ? x : [x];			// creates single element array from non-Array datatypes
-const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }	// same as mkArr, except for [] which becomes default array
+/* */ const mkArr = x => Array.isArray(x) ? x : [x];			// creates single element array from non-Array datatypes
+/* */ const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }	// same as mkArr, except for [] which becomes default array
 
-// I hate this.  Why is debugging Promises so hard?  Why isn't it built in?
-// Promise.resolve().then(_ => randomly_failing_function()).then(OK).catch(KO).then(...OKO('mypromise'))
-const KO = (e, ...a) =>	{ D('catch', e, ...a); throw e }	// Promise.reject().catch(KO).then(not_executed)
-const OK = (v, ...a) =>	{ D('then', v, ...a); return v }	// Promise.resolve().then(OK).then(..)
-const OKO = (...a) =>	[ v => OK(v, ...a), e => KO(e, ...a) ]	// Promise.reject.then(...OKO('mypromise')).then(not_executed)
-const KOK = (...a) =>	DD(...a)				// Promise.reject().catch(KOK('shown when fail&debug')).then(..)
-const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(IGN('error is ignored')).then(..)
+/* */ // I hate this.  Why is debugging Promises so hard?  Why isn't it built in?
+/* */ // Promise.resolve().then(_ => randomly_failing_function()).then(OK).catch(KO).then(...OKO('mypromise'))
+/* */ const KO = (e, ...a) =>	{ D('catch', e, ...a); throw e }	// Promise.reject().catch(KO).then(not_executed)
+/* */ const OK = (v, ...a) =>	{ D('then', v, ...a); return v }	// Promise.resolve().then(OK).then(..)
+/* */ const OKO = (...a) =>	[ v => OK(v, ...a), e => KO(e, ...a) ]	// Promise.reject.then(...OKO('mypromise')).then(not_executed)
+/* */ const KOK = (...a) =>	DD(...a)				// Promise.reject().catch(KOK('shown when fail&debug')).then(..)
+/* */ const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(IGN('error is ignored')).then(..)
 
 // Create real Error()s on catch chains for better processing.
 //
@@ -125,11 +125,11 @@ const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(I
 /* */ const fromJ	= o => JSON.parse(o);
 /* */ const toJ	= o => JSON.stringify(o);
 /* */ const sortJ	= (ob,sort,space) => JSON.stringify(ob	// sorted JSON.stringify, see https://stackoverflow.com/a/43636793
-  , (k,v) =>
-    (v instanceof Object && !(v instanceof Array || v instanceof Date || v instanceof Function))
-    ? Object.keys(v).sort(sort).reduce((x,y) => (x[y] = v[y], x), {})
-    : v
-  , space);
+/* */  , (k,v) =>
+/* */    (v instanceof Object && !(v instanceof Array || v instanceof Date || v instanceof Function))
+/* */    ? Object.keys(v).sort(sort).reduce((x,y) => (x[y] = v[y], x), {})
+/* */    : v
+/* */  , space);
 
 /* */ const SleeP	= (ms,v) => new Promise(ok => setTimeout(ok, ms, v));		// await SleeP(10).then(..)
 /* */ const SleEp	= (ms,e) => new Promise((ok,ko) => setTimeout(ko, ms, e));	// await SleEp(10).catch(..)
