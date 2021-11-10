@@ -42,41 +42,48 @@
 
 // <script src="es11.js" data-debug></script>
 // data-debug enables debugging
-let DEBUGGING = document.currentScript?.dataset?.debug;		// you can change this later
-const DispatchEvent = async e => await window.dispatchEvent(e);	// do it asynchronously to not stop execution
+const DEBUGGING = this.DEBUGGING || document.currentScript?.dataset?.debug;	// you can change this later
 
-const _FPA = Function.prototype.apply;
-const _FPC = Function.prototype.call;
-const DONOTHING = function(){}					// The "do nothing" DUMMY function
-let CONSOLE = (...a) => { console.log(...a) };			// returns void 0 for sure (and changeable)
+const DispatchEvent = async e => await window.dispatchEvent(e);			// do it asynchronously to not stop execution
+const _FPA = Function.prototype.apply;						// _FPA.call(fn,THIS,[args..])
+/*_*/ const _FPC = Function.prototype.call;						// _FPC.call(fn,THIS,args..)
+/*_*/ const DONOTHING = function(){}							// The "do nothing" DUMMY function
 const DEPRECATED = (_ => (...a) => { if (_) CONSOLE([_--].concat(a), new Error(`deprecation warning`)) })(100); // prints 100 occurances (hopefully with stacktrace)
+/*_*/ const CONSOLE = this.CONSOLE || ((...a) => { console.log(...a) });		// returns void 0 for sure (and changeable)
 
-// sorted ABC, commented names are below
-const AsyncFun	= Object.getPrototypeOf(async function(){}).constructor;
+// mostly sorted by ABC, //^v NAME if NAME is displaced (^v is direction)
+
+const AsyncFun = Object.getPrototypeOf(async function(){}).constructor;
 const C = (fn,...a) => function (...b) { return _FPC.call(fn,this,...a,...b) }	// Curry (allows to bind this)
-const C$ = (fn,self,...a) => C$$(fn,self,a);			// Curry Call (with self)
-const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);	// Curry Apply (with self)
+const C$ = (fn,self,...a) => C$$(fn,self,a);					// Curry Call (with self)
+const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);		// Curry Apply (with self)
 
 const CA = C$$, CC = C$;	// deprecated
 
 // Report some error, but do not terminate execution (just returning VOID)
-const CATCH = function(fn,...a)	{ CATCH$$(fn,this,a) }		// class { CATCH=CATCH } and then: this.CATCH(this.fn, args..)
+const CATCH = function(fn,...a)	{ return CATCH$$(fn,this,a) }	// class { CATCH=CATCH } and then: this.CATCH(this.fn, args..)
 const CATCH$ = (fn,self,...a)	=> CATCH$$(fn,self,a)		// this.fn(args..) becomes CATCH$(this.fn, this, args..)
 const CATCH$$ = (fn,self,a)	=> { try { return _FPC.call(fn,self,...a) } catch (e) { DispatchEvent(new ErrorEvent('catched error', {error:e})) } }
+      //^ CONSOLE
 
 //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
 const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
 const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
-//DONOTHING
+      //v defArr
+      //^ DEPRECATED
 const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
-//E() see below
-//Get()	fetch via 'GET'
+      //^ DONOTHING
+      //v E
+      //v Fetch FetchProgress fetchProgress
+      //v fromJ
+      //v Get GetJSON GetText
+      //v IGN
 const isFunction= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
 const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
 const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
 const isArray	= a => Array.isArray(a);
 const isInt	= i => Number.isInteger(i);
-//KO()
+
 const mkArr = x => Array.isArray(x) ? x : [x];			// creates single element array from non-Array datatypes
 const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }	// same as mkArr, except for [] which becomes default array
 
@@ -158,6 +165,7 @@ const IGN = (...a) =>	(...b) => CONSOLE(...a, ...b)		// Promise.reject().catch(I
 // Why is it so complex to make it somewhat efficient?
 // Following looks a bit too much like Java for my taste .. sorry:
 // https://developer.mozilla.org/en-US/docs/Web/API/Streams_API/Using_readable_streams#reading_the_stream
+//F//
 const fetch_progress = (...a) => _ => FetchProgress(_, ...a)
 const FetchProgress = (_, fn, ...args) =>
   {
@@ -187,6 +195,9 @@ const FetchProgress = (_, fn, ...args) =>
       };
     return new Response(new ReadableStream({start}), _);
   };
+//F//e
+
+     //^ THROW
 
 // Escape URI and (only the problematic) HTML entities
 // As there are gazillions of named HTML entities (and counting)
@@ -225,10 +236,12 @@ const es11WeakRef = (() =>
 ////////////////////////////////////////////////////////////////////////
 // OVERVIEW: (sync:immediately, async:microtask, cycle:task queue, frame:animation frame)
 //
-// r=tmpcache(fn,a):		sync: r(b) caches fn(a), but only in this cycle
-// r=single_run(fn,a):		async: r(b) runs fn(a,b) if it not already runs, else re-runs last invocation when fn(a,b) finishes
-// r=once_per_cycle(fn,a):	cycle: r(b) runs fn(a,b) once on end of cycle. r(b) returns unused arguments (previous invocation not realized)
-// r=once_per_frame(fn,a):	frame: as once_per_cycle() but on animation frame.
+// r=tmpcache(fn,a..):		sync: r(b) caches fn(a), but only in this cycle
+// r=single_run(fn,a..):	async: r(b) runs fn(a,b) if it not already runs, else re-runs last invocation when fn(a,b) finishes
+// r=once_per_cycle(fn,a..):	cycle: r(b) runs fn(a,b) once on end of cycle. r(b) returns unused arguments (previous invocation not realized)
+// r=once_per_frame(fn,a..):	frame: as once_per_cycle() but on animation frame.
+// r=once_per_ms(ms,fn,a..):	delay: as once_per_cycle() but last invocation after given ms
+// note: once_per_cycle(fn,a..) is the same as once_per_ms(0,fn,a..)
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
@@ -349,9 +362,9 @@ const _run_once = _ => (f => f(_))(later =>
     return (fn,...a) =>
       {
         let x, done = [];       // no previous semaphore
-        const call = () => { if (block!==done) { done=block; fn(...a,...x) } }; // run if semaphore changed
+        const call = () => { if (block!==done && x) { done=block; const t=x; x=void 0; fn(...a,...t) } }; // run if semaphore changed
         if (block)
-          throw new Exception('once_per_cycle() called from within function executing once per cycle');
+          throw new Exception('_run_once() called from within function executing once per cycle');
         return (...b) =>
           {
             const was = x;
@@ -374,8 +387,48 @@ const _run_once = _ => (f => f(_))(later =>
           }
       }
   });
-const once_per_cycle = _run_once(_ => setTimeout(_));
-const once_per_frame = _run_once(_ => window.requestAnimationFrame(_));
+const once_per_cycle	= _run_once(_ => setTimeout(_));
+const once_per_frame	= _run_once(_ => window.requestAnimationFrame(_));
+const once_per_ms	= (ms,...a) => _run_once(_ => setTimeout(_,ms))(...a);
+const once_per_ms$	= (fn,...a) => _run_once(_ => setTimeout(_,fn(...a)))(...a);
+
+// *UNTESTED*
+// Revocable Promise:		// at least what I came up with
+// r = R(fn, ...args);		// fn(r,...args) is called and should return a Promise
+// .signal			// AbortController.signal
+// .abort			// AbortController.abort (result is that of what the function returns due to the abort)
+// .aborted			// AbortController.signal.aborted
+// .settled			// true if Promise has resolved
+// .onabort			// AbortController.signal.onabort
+// .on(fn, ...args)		// AbortController.signal.addEventListener(() => fn(...args)).  Returns function which, wenn called, removes the listener
+// .revoke(cause)		// AbortController.abort() plus reject Promise with given cause instead.
+// .then() .catch() .finally()	// same as for Promise
+// .ok(_)			// accept Promise, WITHOUT revocation
+// .ko(_)			// reject Promise, WITHOUT revocation
+// Syntactic sugar:		// .revoke=cause, .ok=_, .ko=_
+class Revocable extends Promise
+  {
+    constructor(fn,...a)
+      {
+        const __	= { a:new AbortController() };
+        const sig	= __.a.signal;
+        super((ok,ko) => { __.o = ok; __.k = ko });
+        const kick = x => _ => { if (__) { __ = void 0; x(_) } };
+        const ok = _ => kick(__.o)(_);
+        const ko = _ => kick(__.k)(_);
+        (async () => fn(this,...a))().then(kick(__.o), kick(__.k));
+        Object.defineProperty(this, 'ok',	{ get:() => _ => ok(_),            set: ok });
+        Object.defineProperty(this, 'ko',	{ get:() => _ => ko(_),            set: ko });
+        Object.defineProperty(this, 'signal',	{ get:() => __.a.signal });
+        Object.defineProperty(this, 'abort',	{ get:() => __.a.abort() });
+        Object.defineProperty(this, 'revoke',	{ get:() => _ => this.revoke = _,  set: _ => { __.a.abort(); ko(_) } });
+        Object.defineProperty(this, 'onabort',	{ get:() => sig.onabort,           set: _ => sig.onabort = _ });
+        Object.defineProperty(this, 'aborted',	{ get:() => sig.aborted });
+        Object.defineProperty(this, 'on',	{ get:() => (fn,...a) => { const f = _ => fn(...a); sig.addEventListener('abort', f); return () => sig.removeEventListener('abort', f) } });
+        Object.defineProperty(this, 'settled',	{ get:() => !__ });
+      }
+  };
+const R = (...a) => new Revocable(...a);
 
 // Examples:
 // for (let i=0; ++i<1000000; ) fetch(`http://example.com/?${i}`);	// crashes the Tab
@@ -428,7 +481,7 @@ const once_per_frame = _run_once(_ => window.requestAnimationFrame(_));
 // .try()	Same as Acquire(), but synchronous.  Hence it fails if no Semaphore available (or max() returns a Promise or throws)
 // .Acquire()	acquires 1.  returns a Promise which resolves to the "release()" function.
 // .Acquire(0)	acquires all free (at least 1).
-//		release() or release(0) releases all Acquired, release(1) only releases 1.  Throws if "overreleased"
+//		release() or release(void 0) releases all Acquired, release(1) only releases 1.  Throws if "overreleased"
 // .Wait(N)	wait for N Releases. .Wait(0) returns immediately if nothing is running, else waits for 1 Release
 // .Max(N)	wait until .count is not more than N, .Max() is .Max(0)
 // .Min(N)	wait until .count is at least N, .Min() is .Min(0)
@@ -486,7 +539,7 @@ const Semaphore = (max, fn, ...args) =>
         try {
           return isFunction(ret.max) ? ret.max(ret, ...a) : ret.max;
         } catch (e) {
-          return PE;
+          return PE;	// This is an internal function, so do not call global error handler in case we are rejected
         }
       }
     const next = _ =>
@@ -598,6 +651,7 @@ const Semaphore = (max, fn, ...args) =>
       }
 
     // Sadly I found no good way to reuse things here
+    // XXX TODO XXX implement with Revocable above!
     const Acquire = async (N,...a) =>
       {
         D('Acquire', N,a);
@@ -964,14 +1018,28 @@ class _E0 extends Callable
 
   *[Symbol.iterator]()	{ for (const e of this.__E) yield e }
   *MAP(fn, ...a)	{ for (const e of this.__E) yield fn(e, ...a) }
+  //forEach(...a)	{ return this.run(...a) }	// made no sense!
+  foreach(fn,self)	{ this.__E.forEach((e,i) => fn.call(self, E(e), i, this)); return this }
+
   Run(fn, ...a)		{ return P(fn, this, ...a) }
   Run$(fn, ...a)	{ return P$$(fn, this, a) }
   Run$$(fn,a)		{ return P$$(fn, this, a) }
+  // ..run(_ =>             _.DIV.DIV.text('HW'))     ..
+  // ..run$(function() { this.DIV.DIV.text('HW') })   ..
+  // ..                       DIV.DIV.text('HW').$$.$$..	// place the right number of $$ here
   run(fn, ...a)		{ fn(this, ...a); return this }
   run$(fn, ...a)	{ fn.apply(this, a); return this }
   run$$(fn,a)		{ fn.apply(this, a); return this }
-
-  forEach(...a)		{ return this.run(...a) }
+  // variants not returning this, but instead return the return value of the function
+  // fn(_,..).then( can be written as  _.RUN(fn,..).then(
+  // which keeps the function call in a chain where it is done (and does not drive indent to the right)
+  RUN(fn, ...a)		{ return fn(this, ...a) }
+  RUN$(fn, ...a)	{ return fn.apply(this, a) }
+  RUN$$(fn,a)		{ return fn.apply(this, a) }
+  // like run() but async
+  async Await(fn,...a)	{ await fn(this,...a); return this }
+  async Await$(fn,...a)	{ await fn.apply(this, a); return this }
+  async Await$$(fn,a)	{ await fn.apply(this, a); return this }
 
   debug(...a)		{ console.log('debug', ...a, this.__E); return this }
 
@@ -1035,6 +1103,23 @@ class _E0 extends Callable
           l = true;				// !fn(this) fallthrough
         }
     }
+  // call list of functions with this and value until one returns truish
+  // We cannot do .switch(x).case(fn,..).case(fn,..) as this needs contexts in an async world
+  // switch() always returns this
+  switch(val,...fns)	{ return this.switch_(val,fns) }
+  switch_(val,fns)	{ this.SWITCH_(val,fns); return this }
+  // SWITCH() returns the value of the first function returning something truthy
+  SWITCH_(val,fns)	{ for (const fn of fns) { const r = fn(this,val); if (r) return r } }
+  SWITCH(val,...fns)	{ return this.SWITCH_(val,fns) }
+  // Switch() returns a promise which resolves to the value of the first (possibly async) function returning something truthy
+  Switch(val,...fns)	{ return this.Switch_(val,fns) }
+  async Switch_(v,fns)	{ for (const fn of fns) { const r = await fn(this,v); if (r) return r } }
+  // To fallback to this, use something like:
+  // SWITCH(v,fns,_ => _)
+  // Switch(v,fns,_ => _).then(_ =>
+  // To always resolve to this with Switch(), use something like:
+  // .Run(_ => _.Switch(..).then(() => _))
+  // .Await(_ => _.Switch(..)).then(_ =>
   };
 
 class _E extends _E0
