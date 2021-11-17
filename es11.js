@@ -713,7 +713,7 @@ class ON
       this.__fn		= [];
     }
 
-  CATCH = CATCH
+  CATCH = CATCH		// trick to set this on call
   add(fn, ...a)		{ return this.add$$(fn,a) }					// fn(ev,...a) with this set
   add2(fn, ...a)	{ return this.add$$(function (...a) { fn(this,...a) }, a) }	// fn(ev,this,...a) without this set
   add$$(fn, a)		{ this.__fn.push([fn,a]); return this }
@@ -721,11 +721,14 @@ class ON
 
   handleEvent(ev)
     {
+//      CONSOLE('handle', this.__type);
       this.$ = ev;
       for (const a of this.__fn)
         if (this.CATCH(a[0], ev, ...a[1]))	// do not bail out on error, just report
           {
-            ev.preventDefault()
+//            CONSOLE('prevent', this.__type);
+            ev.stopPropagation();
+            ev.preventDefault();
             return false;
           }
       return true;
@@ -736,7 +739,7 @@ class ON
       for (const o of a)
         for (const e of o)
           {
-            e.addEventListener(this.__type, this, true);
+            e.addEventListener(this.__type, this, this.__capture);
             this.__el.push(new es11WeakRef(e));
           }
       return this;
@@ -1014,7 +1017,7 @@ class _E0 extends Callable
   onme(...a)		{ this.ONme(...a); return this }
   // onb() and ONb use Bubbling phase, so are on reverse order
   ONb(type, fn, ...a)	{ return type ? new ON(type, false).add(fn, this, ...a).attach(this) : void 0 }
-  onb(...a)		{ this.ONB(...a); return this }
+  onb(...a)		{ this.ONb(...a); return this }
 
   *[Symbol.iterator]()	{ for (const e of this.__E) yield e }
   *MAP(fn, ...a)	{ for (const e of this.__E) yield fn(e, ...a) }
