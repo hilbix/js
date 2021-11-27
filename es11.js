@@ -42,7 +42,7 @@
 
 // <script src="es11.js" data-debug></script>
 // data-debug enables debugging
-/* */ const DEBUGGING = this.DEBUGGING || document.currentScript?.dataset?.debug;	// you can change this later
+/* */ let DEBUGGING = this.DEBUGGING || document.currentScript?.dataset?.debug;	// you can change this later
 
 /* */ const DispatchEvent = async e => await window.dispatchEvent(e);			// do it asynchronously to not stop execution
 /* */ const _FPA = Function.prototype.apply;						// _FPA.call(fn,THIS,[args..])
