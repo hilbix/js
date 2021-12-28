@@ -1,5 +1,5 @@
 'use strict';	// this is for ES11 aka ES2020
-// In future: s/__/#/g
+// In future: sed -i 's/__\([a-zA-Z]\)/#\1/g'
 // Do not try to access __ things, as IT WILL FAIL in future!
 
 // TODO:
@@ -78,18 +78,41 @@
       //v fromJ
       //v Get GetJSON GetText
       //v IGN
-/* */ const isFunction= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
-/* */ const isObject	= o => o?.constructor === Object;		// https://stackoverflow.com/posts/comments/52802545
-/* */ const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
 /* */ const isArray	= a => Array.isArray(a);
+/* */ const isFunction	= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
 /* */ const isInt	= i => Number.isInteger(i);
+/* */ const isObject	= o => typeof o === 'object' && (Object.getPrototypeOf(o || []) || Object.prototype) === Object.prototype;	// fixed.  Following fails for OB(): https://stackoverflow.com/posts/comments/52802545
+/* */ const isObjectOrNull = o => typeof o === 'object' && (Object.getPrototypeOf(o || {}) || Object.prototype) === Object.prototype;
+/* */ const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
+// Relative speeds tested with Chrome 95 in percent:
+// 'str' 1 (new String)
+// 100 100 100	s?.constructor === String
+// 100 100  99	(typeof x == 'string') || (x instanceof String)
+//  12  13  11  Object.prototype.toString.call(x) === "[object String]"
 
-/* */ const mkArr = x => Array.isArray(x) ? x : [x];			// creates single element array from non-Array datatypes
-/* */ const defArr = (x,d) => { x=mkArr(x); return x.length ? x : mkArr(d) }	// same as mkArr, except for [] which becomes default array
+/* */ const mkArr = x =>	Array.isArray(x) ? x : [x];			// creates single element array from non-Array datatypes
+/* */ const defArr = (x,d) =>	{ x=mkArr(x); return x.length ? x : mkArr(d) }	// same as mkArr, except for [] which becomes default array
 
 /* */ // I hate this.  Why is debugging Promises so hard?  Why isn't it built in?
 /* */ // Promise.resolve().then(_ => randomly_failing_function()).then(OK).catch(KO).then(...OKO('mypromise'))
 /* */ const KO = (e, ...a) =>	{ D('catch', e, ...a); throw e }	// Promise.reject().catch(KO).then(not_executed)
+/* */ const OB = (...a) =>	Object.assign(Object.create(null), ...a); // Plain Object without protoype (just O considered too error prone)
+// /
+const OBfix = o =>
+  {
+    let r;
+    if (isArray(o))
+      r = [];
+    else if (isObject(o))
+      r = OB();
+    else
+      return o;
+    for (const i in o)
+      r[i] = OBfix(o[i]);
+    return r;
+   };
+// /e
+
 /* */ const OK = (v, ...a) =>	{ D('then', v, ...a); return v }	// Promise.resolve().then(OK).then(..)
 /* */ const OKO = (...a) =>	[ v => OK(v, ...a), e => KO(e, ...a) ]	// Promise.reject.then(...OKO('mypromise')).then(not_executed)
 /* */ const KOK = (...a) =>	DD(...a)				// Promise.reject().catch(KOK('shown when fail&debug')).then(..)
@@ -110,7 +133,7 @@
 // Promise.reject('throw').catch(THROW).catch(e => bug(e.message, e.stack))
 /* */ const THROW = e => { e = e instanceof Error ? e : e instanceof ErrorEvent ? new Error(e.message, e.filename, e.lineno, e.colno) : new Error(e); D('ERROR', e); throw e }
 
-// P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
+      // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
 /* */ const PO = () => { const o={}; o.p = new Promise((ok,ko) => { o.ok=ok; o.ko=ko }); return o }	// PromiseObject
 /* */ const PR = Promise.resolve();			// PRomise
 /* */ const PE = Promise.reject();			// PromisErr  WARNING: Only use PE instead of Promise.reject() if you want to suppress the "Uncaught in Promise" error by default!
@@ -122,8 +145,8 @@
       //v PutJSON  PutText
 /* */ const PC = P$;	// deprecated
 
-/* */ const fromJ	= o => JSON.parse(o);
-/* */ const toJ	= o => JSON.stringify(o);
+/* */ const fromJ	= s => OBfix(JSON.parse(s));	// false === 'constructor' in fromJ('{}')
+/* */ const toJ		= o => JSON.stringify(o);
 /* */ const sortJ	= (ob,sort,space) => JSON.stringify(ob	// sorted JSON.stringify, see https://stackoverflow.com/a/43636793
 /* */  , (k,v) =>
 /* */    (v instanceof Object && !(v instanceof Array || v instanceof Date || v instanceof Function))
@@ -1129,7 +1152,7 @@ class _E extends _E0
   {
   __cache
 
-  constructor(e)	{ super(e); this._cache = {} }
+  constructor(e)	{ super(e); this.__cache = {} }
 
   get $$()		{ return E(this.$?.parentNode); }
 
@@ -1216,7 +1239,7 @@ class _E extends _E0
   set $class(o)		{ for (const a in o) this.$.classList.toggle(a, o[a]) }			// XXX TODO XXX $all!
 
   // Only create Style-class if it is really needed
-  get $style()		{ return this._cache.style ? this._cache.style : this._cache.style = Styles(this) }
+  get $style()		{ return this.__cache.style ? this.__cache.style : this.__cache.style = Styles(this) }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(X(e)).attr(attr) }
