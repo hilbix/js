@@ -1,7 +1,13 @@
 'use strict';
 
+const WTFFcopyToClip = text =>
+  {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function')
+      return navigator.clipboard.writeText(text);
+    throw "not supported";
+  }
 const copyTextFromClip	= _ => PR.then(() => navigator.clipboard.readText())           .catch(_ => { console.log('clip read err' , _); throw _ });
-const copyTextToClip	= _ => PR.then(() => navigator.clipboard.writeText(_)).then(_ => '✓', _ => { console.log('clip write err', _); return '✗' });
+const copyTextToClip	= _ => PR.then(() => WTFFcopyToClip(_)).then(_ => '✓', _ => { console.log('clip write err', _); return '✗' });
 const copyButton = (e, t) =>
 {
   // ✂  🗐  ⎘  📋  ⧉   ...
