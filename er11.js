@@ -12,57 +12,59 @@ const __CATCH__ = fn =>
   {
     // a global catch for errors and unhandled rejections
     let w = e => { const v=e.error || e.reason; try {
-        let o={type:e.toString?.()}
-        if (v?.stack) o.stack = v.stack;
-        else o.reason = e.reason;	// Without .catch(THROW) you do not get a stackframe from Promise.reject()!
-        if (v?.message) o.message = v.message;
-        ['filename','lineno','colno'].filter(_ => e[_]).forEach(_ => o[_]=e[_]);
-        fn(e, o);
-      } catch(e) { console.log?.('CATCHERR', e) } }
+      let o={type:e.toString?.()}
+      if (v?.stack) o.stack = v.stack;
+      else o.reason = e.reason;	// Without .catch(THROW) you do not get a stackframe from Promise.reject()!
+      if (v?.message) o.message = v.message;
+      ['filename','lineno','colno'].filter(_ => e[_]).forEach(_ => o[_]=e[_]);
+      fn(e, o);
+    } catch(e) { console.log?.('CATCHERR', e) } }
     window.addEventListener('error',w,true);
     window.addEventListener('unhandledrejection',w);
     window.addEventListener('es11_catched_error_event',w);
-    // do we need more?
+    // do we need even more?
   }
 
+(f => f(document.currentScript?.dataset))(ds => {
+
 // Output to console: data-debug="prefix"
-if (document.currentScript.dataset?.debug)
+if (ds?.debug)
   // Actually this is a BUG for environments lacking console.
   // We should forward this problem to the other error handlers.
-  (f => f(document.currentScript.dataset.debug))(s => __CATCH__((e,d) => console.log?.(s,e,d)));
+  __CATCH__((e,d) => console.log?.(ds.debug,e,d));
 
 // Append <PRE> to some element: data-append="element-id"
 // when clicked error message is copied to clipboard and removed
-if (document.currentScript.dataset?.append)
-  (f => f(document.currentScript.dataset.append, document.currentScript.dataset.appendms))((id,ms) =>
-    __CATCH__((e,d) =>
-      {
-        const f = r => (f => f(document.getElementById(id)))(o =>
-//            { console.log('f', o,r,ms); return (
-            o ? o.append(((f => f(document.createElement('PRE')))(l =>
-                {
-                  l.innerText = Object.keys(d).map(k => `${k}: ${d[k]}`).join('\n')
-                  if (ms != 0) setTimeout(() => l.remove(), parseInt(ms) || 33333);
-		  if (!document.currentScript.dataset.noclick)
-		    l.onclick = () => { try { navigator.clipboard.writeText(l.innerText).then(() => l.remove()); } catch(e) { console.log('failed to copy error message to clip', e) }};
+if (ds?.append)
+  __CATCH__((e,d) =>
+    {
+      const f = r => (f => f(document.getElementById(ds.append)))(o =>
+//          { console.log('f', o,r,ds.ms); return (
+          o ? o.append(((f => f(document.createElement('PRE')))(l =>
+              {
+                l.innerText = Object.keys(d).map(k => `${k}: ${d[k]}`).join('\n');
+                if (ds.ms != 0) setTimeout(() => l.remove(), parseInt(ds.ms) || 33333);
+                if (!ds.noclick)
+                  l.onclick = () => { try { navigator.clipboard.writeText(l.innerText).then(() => l.remove()); } catch(e) { console.log('failed to copy error message to clip', e) }};
                   return l;
-                })))
-              : r ? setTimeout(f,r,r-1)
-              : 0
-                // Actually this is a BUG:
-                // If ID is not available we should throw.
-                // However this would create a loop here,
-                // so we somehow must evade this.
+              })))
+            : r ? setTimeout(f,r,r-1)
+            : 0
+              // Actually this is a BUG:
+              // If ID is not available we should throw.
+              // However this would create a loop here,
+              // so we somehow must evade this.
 //          )}
-          );
-        setTimeout(f, 0, 100);
-    }));
+        );
+      // try 100 times to get the element
+      setTimeout(f, 0, 100);
+    });
 
 // POST to some URL as JSON {e:{error-object}, t:tag}: data-post="URL" data-tag="tag"
-if (document.currentScript.dataset?.post)
-  (f => f(new URL(document.currentScript.dataset.post,
-                  new URL(document.currentScript.url, window.location))
-         ,document.currentScript.dataset.tag))((u,t) =>
+if (ds?.post)
+  {
+    const u = new URL(ds.post, new URL(document.currentScript.url, window.location));
+    const t = ds.tag;
     __CATCH__((_,e) => fetch(u,
       { cache:'no-cache'
       , method:'POST'
@@ -75,5 +77,8 @@ if (document.currentScript.dataset?.post)
       // We shall throw errors to all other CATCH() handlers here that the POST did not work.
       // Also we should retry after a little waiting time and give up at too many retries.
       // This, however, needs to create some own clever Error object which is a lot of work.
-     ));
+     );
+  }
+
+});
 
