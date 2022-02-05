@@ -4,7 +4,7 @@
 
 // Minimalistic global error catcher/reporter:
 // <script src="er11.js" data-post="https://error.example.com/errortarget" data-tag="sometag"></script>
-// <script src="er11.js" data-append="element-id" data-appendms="20000"></script>
+// <script src="er11.js" data-append="element-id" data-appendms="20000" data-noclick></script>
 // <script src="er11.js" data-debug="console-prefix"></script>
 
 // __CATCH__(fn): calls fn(e,j) on errors, j is a JSON serializable object
@@ -42,6 +42,8 @@ if (document.currentScript.dataset?.append)
                 {
                   l.innerText = Object.keys(d).map(k => `${k}: ${d[k]}`).join('\n')
                   if (ms != 0) setTimeout(() => l.remove(), parseInt(ms) || 33333);
+		  if (!document.currentScript.dataset.noclick)
+		    l.onclick = () => { try { navigator.clipboard.writeText(l.innerText).then(() => l.remove()); } catch(e) { console.log('failed to copy error message to clip', e) }};
                   return l;
                 })))
               : r ? setTimeout(f,r,r-1)
