@@ -21,6 +21,7 @@ const __CATCH__ = fn =>
       } catch(e) { console.log?.('CATCHERR', e) } }
     window.addEventListener('error',w,true);
     window.addEventListener('unhandledrejection',w);
+    window.addEventListener('es11_catched_error_event',w);
     // do we need more?
   }
 
