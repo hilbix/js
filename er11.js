@@ -31,8 +31,9 @@ if (document.currentScript.dataset?.debug)
   (f => f(document.currentScript.dataset.debug))(s => __CATCH__((e,d) => console.log?.(s,e,d)));
 
 // Append <PRE> to some element: data-append="element-id"
+// when clicked error message is copied to clipboard and removed
 if (document.currentScript.dataset?.append)
-  (f => f(document.currentScript.dataset.append, document.currentScript.dataset?.appendms))((id,ms) =>
+  (f => f(document.currentScript.dataset.append, document.currentScript.dataset.appendms))((id,ms) =>
     __CATCH__((e,d) =>
       {
         const f = r => (f => f(document.getElementById(id)))(o =>
