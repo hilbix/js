@@ -63,7 +63,7 @@
 // Report some error, but do not terminate execution (just returning VOID)
 /* */ const CATCH = function(fn,...a)	{ return CATCH$$(fn,this,a) }	// class { CATCH=CATCH } and then: this.CATCH(this.fn, args..)
 /* */ const CATCH$ = (fn,self,...a)	=> CATCH$$(fn,self,a)		// this.fn(args..) becomes CATCH$(this.fn, this, args..)
-/* */ const CATCH$$ = (fn,self,a)	=> { try { return _FPC.call(fn,self,...a) } catch (e) { DispatchEvent(new ErrorEvent('catched error', {error:e})) } }
+/* */ const CATCH$$ = (fn,self,a)	=> { try { return _FPC.call(fn,self,...a) } catch (e) { DispatchEvent(new ErrorEvent('es11_catched_error_event', {error:e})) } }
       //^ CONSOLE
 
 /* */ //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
