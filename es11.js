@@ -78,7 +78,7 @@
       //v fromJ
       //v Get GetJSON GetText
       //v IGN
-/* */ const isArray	= a => Array.isArray(a);
+/* */ const isArray	= Array.isArray;
 /* */ const isFunction	= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
 /* */ const isInt	= i => Number.isInteger(i);
 /* */ const isObject	= o => typeof o === 'object' && (Object.getPrototypeOf(o || []) || Object.prototype) === Object.prototype;	// fixed.  Following fails for OB(): https://stackoverflow.com/posts/comments/52802545
@@ -92,6 +92,7 @@
 
 /* */ const mkArr = x =>	Array.isArray(x) ? x : [x];			// creates single element array from non-Array datatypes
 /* */ const defArr = (x,d) =>	{ x=mkArr(x); return x.length ? x : mkArr(d) }	// same as mkArr, except for [] which becomes default array
+///* */ const flatArr = *(...a) => { while (a.length) { const b=a.shift();  if (!isArray(b)) { yield b; continue; }
 
 /* */ // I hate this.  Why is debugging Promises so hard?  Why isn't it built in?
 /* */ // Promise.resolve().then(_ => randomly_failing_function()).then(OK).catch(KO).then(...OKO('mypromise'))
@@ -1363,6 +1364,7 @@ class _E extends _E0
   // Read: This here still is not perfect and might change in future!
   Loaded()		{ return Promise.allSettled(Array.from(this.MAP(_ => _.decode()))) }
   // Scroll into view as soon as mapped: img.Loaded().then(_ => img.show())
+  // block: start (default), center, end, nearest.
   show(mode)		{ this.$?.scrollIntoView(mode || {block:'nearest'}); return this }
   // hide() should be implemented using CSS:
   // .hide { display:block !important }
@@ -1613,7 +1615,7 @@ class UniQ extends Emit
   async* [Symbol.asyncIterator]()
     {
       for (;;)
-        yield await this.get();
+        yield await this.Get();
     }
   };
 
@@ -2309,4 +2311,181 @@ class WeakCache
 //
 // NOT IMPLEMENTED YET below
 //
+/**/
+
+// Some Value which might change
+// v = V()				Create a value of 0
+// v = V(init)				Create with INITial value (can be object)
+// v = V('hello world', _ => return T(_))	use render function
+// v.$					get rendered value (as _E)
+// v.addTo(e)				add rendered value to element, return this
+// v.get(e)				get rendered value wrapped in the given element
+// v.render(_ => ..., ...)		get rendered value based on renderer
+// v.set(newvalue)			set value
+// v.add()				increment value
+// v.add(delta)				increment value	by delta (negative ok)
+//
+// What is the catch?
+// - The catch is that the DOM automatically updates when V.set() is called.
+// - Also you can use .ON()
+
+const V = new WeakCache(_ => new _V(..._)).factory;
+class _V extends _E0
+  {
+  _v; _r; _a
+
+  constructor(val, render, ...args)
+    {
+      super();
+      this._v	= val;
+      this._r	= render;
+      this._a	= args;
+    }
+
+  get $()	{ return this.render() }
+  get(e, ...args)
+    {
+      const r	= this.render(...args);
+      e.add(r);
+      return this;
+    }
+/*
+      this.ON(
+      e.add(
+      e = this._r ? this._r(...this._a
+        e = X(this._v);
+    }
+*/
+  }
+
+/*
+// Promise/async based Do queue.
+// .then(function) is somewhat clumsy.  Hence here I reinvent the wheel:
+// d = DO();
+// d.do(fn, args).do(fn2, args2) and so on
+// d.then -> Promise.all([do-invocations]).then
+// d.catch -> Promise.all([do-invocations]).then
+const DO = (fn, args) =>
+  {
+    const r = [];
+    const _ = {};
+    const call = (fn,...a) => { const p = ((async () => fn(...a))()); r.append(p); return p };
+
+    return \
+      { 'Do':	call,
+      , 'do':	(...a) { call(...a); return _ }
+      , 'then': (...a) => Promise.all(r).then(...a)
+      , 'catch': (...a) => Promise.all(r).catch(...a)
+      }
+
+    const p = 
+  constructor(keeper, id)
+    {
+      super();
+  };
+
+// Easy state synchronization, register, wait for and trigger states
+//
+// States are None (nothing in this state), Some (neither non nor All in state), All (all in state)
+// The Promise is fullfilled if the state is reached
+//
+// somestate = State()
+// somestate.None('idle').then(trigger)		// triggers once on: None
+// somestate.Some('idle').then(trigger)		// triggers once on: Some
+// somestate.All('idle').then(trigger)		// triggers once on: All
+// somestate.Any('idle').then(trigger)		// triggers once on: Some|All
+// somestate.Free('idle').then(trigger)		// triggers once on: None|Some
+// r = somestate.On('idle', cb, args)		// when something enters/leaves 'idle'
+// somestate.Off(r)				// stop 'on' again
+//
+// fn = somestate.ADD()
+// fn('idle')		// triggers triggered
+// fn(somestate.DEL)	// removes the state again
+//
+class State
+  {
+    DEL	= Symbol()
+    NEW	= Symbol()
+
+    constructor()
+      {
+        this._states	= {};
+        this._state	= {};
+        this._args	= {};
+        this._fn	= {};
+        this._cnt	= 0;
+        this._nr	= 0;
+      }
+
+    _del(name, state)
+      {
+        if (!(name in this._state)) THROW(`State._del(${name}) of unknown`);
+        this._state[name]	= 0;
+      }
+
+    _add(name, state, a)
+      {
+        this._args[name]	= a;
+        this._state[name]	= state;
+        const n			= 1+(this._states[state] || 0);
+        this._states[state]	= n;
+
+        this._trigger('any', state, name);
+        if (n==this._cnt)
+          this.trigger('all', state, name);
+      }
+    _trigger(tag, state, name)
+      {
+        const s = this[`_${tag}`];
+        if (!s) return;
+        const t = t[state];
+        delete t[state];
+        for (const f of t)
+          f({org:this, type:tag, state:state, cause:name});
+      }
+
+    _set(name, state, ...a)
+      {
+        if (!state) state = 0;
+        if (!(name in this._state)) return this.DEL;
+        const old = this._state[name];
+        this._args[name]	= a;
+        if (old === state) return old;
+
+//        this.
+
+        if (state === this.DEL)
+          {
+            this._cnt--;
+            delete this._state[name];
+            delete this._args[name];
+            //delete this._fn[name];
+          }
+        else
+          {
+          }
+      }
+
+    ADD(name, ...a)
+      {
+        this._nr++;
+        this._cnt++;
+        name	= name ? `${this.nr}: ${name}` : `${this.nr}`;
+        const self = this;
+        function change(s) { return self._set(name, s); }
+        //this._fn[name]	= change;
+        this._add(name, this.NEW, a)
+        return change
+      }
+    None(s)
+      {
+      }
+    Any(s)
+      {
+      }
+    All(s)
+      {
+      }
+  }
+*/
 
