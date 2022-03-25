@@ -1284,18 +1284,20 @@ class _E extends _E0
   nobr()		{ return this.ws('nowrap') }
   pre()			{ return this.ws('pre') }
 
-  // All TAGs
+  // All TAGs (lowercase: includes .$$)
   get DIV()		{ return this._MK('div') }
   get PRE()		{ return this._MK('pre') }
   get A()		{ return this._MK('a') }
   get IMG()		{ return this._MK('img') }
   get TR()		{ return this._MK('tr') }
   get BR()		{ return this._MK('br') }
+  get br()		{ this.BR; return this }
   get TD()		{ return this._MK('td') }
   get TH()		{ return this._MK('th') }
   get THEAD()		{ return this._MK('thead') }
   get TBODY()		{ return this._MK('tbody') }
   get HR()		{ return this._MK('hr') }
+  get hr()		{ this.HR; return this }
   get SPAN()		{ return this._MK('span') }
   get CHECKBOX()	{ return this._MK('input', {type:'checkbox'}) }
   get INPUT()		{ return this._MK('input', {type:'text'}) }
@@ -1309,8 +1311,53 @@ class _E extends _E0
   get LABEL()		{ return this._MK('label') }
   get IFRAME()		{ return this._MK('iframe') }
 
+  get DL()		{ return this._MK('dl') }
+  get DT()		{ return this._MK('dt') }
+  get DD()		{ return this._MK('dd') }
+  get OL()		{ return this._MK('ol') }
+  get UL()		{ return this._MK('ul') }
+  get MENU()		{ return this._MK('menu') }		// IE6+, experimental
+  get LI()		{ return this._MK('li') }
+
+  get BLOCKQUOTE()	{ return this._MK('blockquote') }
+  get FIGURE()		{ return this._MK('figure') }		// IE9+
+  get FIGCAPTION()	{ return this._MK('figcaption') }	// IE9+
+
+  get WBR()		{ return this._MK('wbr') }
+  get wbr()		{ this.WBR; return this }
+
+  get P()		{ return this._MK('p') }
+  get ABBR()		{ return this._MK('abbr') }
+  get CITE()		{ return this._MK('cite') }
+  get DFN()		{ return this._MK('dfn') }
+  get SAMP()		{ return this._MK('samp') }
+  get MARK()		{ return this._MK('mark') }		// IE9+
+
+  get B()		{ return this._MK('b') }
+  get Q()		{ return this._MK('q') }
+  get S()		{ return this._MK('s') }
+  get U()		{ return this._MK('u') }
+  get EM()		{ return this._MK('em') }
+  get I()		{ return this._MK('i') }
+  get STRONG()		{ return this._MK('strong') }
+  get SMALL()		{ return this._MK('small') }
+  get SUB()		{ return this._MK('sub') }
+  get SUP()		{ return this._MK('sup') }
+  get KBD()		{ return this._MK('kbd') }
   get TT()		{ return this._MK('tt') }
   get CODE()		{ return this._MK('code') }
+  get VAR()		{ return this._MK('var') }
+
+  get DATA()		{ return this._MK('data') }		// IE-
+  get TIME()		{ return this._MK('time') }		// IE-
+
+  get BDI()		{ return this._MK('bdi') }
+  get BDO()		{ return this._MK('bdo') }
+
+  get RUBY()		{ return this._MK('ruby') }
+  get RP()		{ return this._MK('rp') }
+  get RT()		{ return this._MK('rt') }
+  get RUBY()		{ return this._MK('ruby') }
 
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
