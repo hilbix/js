@@ -1399,6 +1399,8 @@ class _E extends _E0
   get LAST()		{ return E0(this.$?.lastChild) }
   get PREV()		{ return E0(this.$?.previousSibling) }
   get NEXT()		{ return E0(this.$?.nextSibling) }
+  get CHILDREN()	{ const c = this.$all; function *iter() { for (const e of c) for (const _ of Array.from(e.children)) yield E0(_) }; return iter() }
+  get CHILDNODES()	{ const c = this.$all; function *iter() { for (const e of c) for (const _ of e.childNodes.values()) yield E0(_) }; return iter() }
 
   setclass(o)		{ this.$class = o; return this }
   addclass(...c)	{ this.$class.add(...c); return this }
