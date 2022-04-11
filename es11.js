@@ -1023,11 +1023,14 @@ class _E0 extends Callable
   constructor(e)	{ super(); this.__e = (this.__E = e ? mkArr(e) : [])[0] || FRAGMENT() }
   get $()		{ return this.__e; }
   get $all()		{ return this.__E; }		// remove in favor of Symbol.iterator
+  CHAIN(fn, ...a)	{ return E0(!fn || !fn.call || (fn instanceof _E0 && !a.length) ? fn : fn.call(this,...a)) }
+  chain(...a)		{ return this.CHAIN(...a) || this }
 
   get $data()		{ return this.__d || (this.__d = {}); }
   data(x,y)		{ this.$data[x]=y; return this }
 
-  rm()			{ for (const e of this.__E) e.remove(); return this }
+  RM(...a)		{ const x = this.CHAIN(...a); for (const e of this.__E) e.remove(); return x }
+  rm(...a)		{ this.RM(...a); return this }
   remove()		{ return this.rm() }
   clr()			{ let a; for (const e of this.__E) while (a = e.firstChild) a.remove(); return this }
 
@@ -1359,6 +1362,7 @@ class _E extends _E0
   get RT()		{ return this._MK('rt') }
   get RUBY()		{ return this._MK('ruby') }
 
+  img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
 
