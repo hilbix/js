@@ -145,6 +145,19 @@ const OBfix = o =>
       //v PostJSON PostText
       //v PutJSON  PutText
 /* */ const PC = P$;	// deprecated
+// /
+// Promise(s) with timeouts
+// Resolve all given Promises within the given time
+// If one rejects (or timeout) this rejects.
+const Ptimeout = (ms, ...prom) =>
+  {
+    if (prom.length != 1) prom = [Promise.all(prom)];
+    const reject = SleEp(ms, 'timeout');
+    reject.catch(DONOTHING);
+    prom.push(reject)
+    return Promise.race(prom);		// Reject after timeout
+  };
+// /e
 
 /* */ const fromJ	= s => OBfix(JSON.parse(s));	// false === 'constructor' in fromJ('{}')
 /* */ const toJ		= o => JSON.stringify(o);
