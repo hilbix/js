@@ -1613,7 +1613,7 @@ class UniQ extends Emit
     }
   get $gets()	{ return this._cnt.get }
   get $puts()	{ return this._cnt.put }
-  get $cnt()	{ return Object.copy(this._cnt) }
+  get $cnt()	{ return Object.assign({}, this._cnt) }
   get $len()	{ return this._q.length }
   get $max()	{ return this._max }
   set $max(m)	{ this._max = m; this._chg('max', m) }	// max changed
