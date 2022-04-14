@@ -515,16 +515,22 @@ const R = (...a) => new Revocable(...a);
 // .cancel()	cancels all
 // .cancel(+N)	cancels the first N on the waiting list
 // .cancel(-N)	cancels the last  N on the waiting list
-// .try()	Same as Acquire(), but synchronous.  Hence it fails if no Semaphore available (or max() returns a Promise or throws)
+// .try()	Same as Acquire(), but synchronous.  Hence it fails if no Semaphore available (or .max is a function which returns a Promise or throws)
+// .acquire()	same as .try().  Note that .try() returns void 0 if nothing can be aquired
 // .Acquire()	acquires 1.  returns a Promise which resolves to the "release()" function.
 // .Acquire(0)	acquires all free (at least 1).
+// .Acquire(N,..) and .acquire(N,..) call .max(N,..) if .max is a function
 //		release() or release(void 0) releases all Acquired, release(1) only releases 1.  Throws if "overreleased"
-// .Wait(N)	wait for N Releases. .Wait(0) returns immediately if nothing is running, else waits for 1 Release
+// .Idle()	same as .Max()
+// .free(N)	returns the number of currently free slots (==N if N given).  0 if nothing is free (or N cannot be satisfied).  Throws if unsatisfyable
+// .Free(N)	same as .free() but asynchronous. .Free()/.free() work like .Acquire()/.acquire(), but does not return a release() function
+// .WaitN(N)	wait for N Releases. .WaitN(0) returns immediately if nothing is running, else waits for 1 Release
 // .Max(N)	wait until .count is not more than N, .Max() is .Max(0)
 // .Min(N)	wait until .count is at least N, .Min() is .Min(0)
 //		Min(0) waits until something happens on the Semaphore
 //		Min(-1) waits until a Release or Acquire
 //		Min(-2) waits until an Acquire
+// .Waiting(N)	wait until .wait <= N
 //
 // If .max is a function, it is called with the Semaphore (and optional .Acquire() args) can dynamically return how much work to do in parallel.
 // If it returns a Promise, execution halts until the Promise resolves.  If it rejects or .max() throws, this is as if it returns 1
@@ -569,6 +575,12 @@ const Semaphore = (max, fn, ...args) =>
             x[0](x[2]);
           }
       }
+    // XXX TODO XXX
+    // We should call .max() only once (with the same parameters)
+    // and cache the result until something changes on the Semaphore.
+    // This also could improve the non-async case in case the async part already has finished.
+    // (But this perhaps creates some nondeterministic looking behavior on the non-async calls.)
+    // !! Be prepared that .max() function is only called on changes in future !!
     const get = (...a) =>
       {
         D('get', a);
@@ -608,10 +620,10 @@ const Semaphore = (max, fn, ...args) =>
         function release(k)
           {
             D('release', k);
-            if (k===void 0 && !(k=n)) THROW(`release(): already fully released`);
+            if (k===void 0 && !(k=n)) THROW(`Semaphore.release(): already fully released`);
             k = k|0;
-            if (k<0) THROW(`release(${k}): negative`);
-            if (n<k) THROW(`release(${k}): too high (max ${n})`);
+            if (k<0) THROW(`Semaphore.release(${k}): negative`);
+            if (n<k) THROW(`Semaphore.release(${k}): too high (max ${n})`);
             release.left	= n -= k;
             upd(-k);
             return release;
@@ -623,30 +635,43 @@ const Semaphore = (max, fn, ...args) =>
         release.run = (fn, ...args) => { CATCH$$(fn, release(0), args); return release(0) }
         return release(0);
       }
-    const acquire = (N,...a) =>		// acquire('1') works.  acquire('0') throws!
+    const free = (N,...a) =>		// .free('1') works.  .free('0') throws!  This is intended
       {
         D('try', N,a);
 //        if (maxing) return;		// max is already resolving -> nope, perhaps max() behaves differently here
         let n = N === void 0 ? 1 : N|0;	// This works for classes with toString() returning nonnull integer
-        if (!n && N!==0)		THROW(`.acquire(${N}): nonnumeric`);
-        if (n<0)			THROW('.aquire(${n}): negative');
+        if (!n && N!==0)		THROW(`Semaphore: nonnumeric paramter ${N}`);
+        if (n<0)			THROW(`Semaphore: negative parameter ${n}`);
 
         let limit = get(N,...a);	// passing N, not n
-        if (limit?.then)		THROW(`cannot use async .max() in non-async .acquire()`);
+        if (limit?.then)		THROW(`Semaphore: cannot use async .max() in non-async call`);
         limit = limit|0;
 
         if (!n)
           {
-            if (limit<=0)		THROW(`.acquire(${n}): unlimited (.max is ${limit})`);
+            if (limit<=0)		THROW(`Semaphore: unlimited (.max is ${limit})`);
             n	= limit-run;
-            if (n<1) return;		// Too much
+            if (n<1) return 0;		// Nothing free
           }
         else if (limit>0)
           {
-            if (n>limit)		THROW(`.acquire(${n}): unsatisfyable (max is ${limit})`);
-            if (run+n>limit) return;	// Too much
+            if (n>limit)		THROW(`Semaphore: unsatisfyable ${n} (.max is ${limit})`);
+            if (run+n>limit) return 0;	// Not enough free
           }
-        return release_function(n);
+        return n;
+      }
+    const acquire = (...a) => { const n = free(...a); return n ? release_function(n) : void 0 }
+
+    const Waiting = async N =>
+      {
+        N = N|0;
+        while (ret.wait>N)
+          {
+            if (!cntwait)
+              cntwait	= PO();
+            await cntwait.p;
+          }
+        return ret;
       }
     const Max = async N =>
       {
@@ -673,7 +698,7 @@ const Semaphore = (max, fn, ...args) =>
             } while (ret.count<N);
         return ret;
       }
-    const Wait = async N =>
+    const WaitN = async N =>
       {
         N = N|0;
         if (N<=0 && !ret.count) return ret;
@@ -687,33 +712,35 @@ const Semaphore = (max, fn, ...args) =>
         return ret;
       }
 
-    // Sadly I found no good way to reuse things here
+    // Sadly I found no good way to reuse things (.free) here
     // XXX TODO XXX implement with Revocable above!
-    const Acquire = async (N,...a) =>
+    const Free = async (N,...a) =>
       {
-        D('Acquire', N,a);
+        D('Free', N,a);
         let n = N === void 0 ? 1 : N|0;		// This works for classes with toString() returning nonnull integer
-        if (!n && N!==0)	THROW(`.Acquire(${N}): nonnumeric`);
-        if (n<0)		THROW('.Aquire(${n}): negative');
+        if (!n && N!==0)		THROW(`Semaphore: nonnumeric paramter ${N}`);
+        if (n<0)			THROW(`Semaphore: negative parameter ${n}`);
 
         for (;;)
           {
             const limit = (await get(N,...a))|0;	// passing N, not n
-            if (!n && limit<=0)	THROW(`.Acquire(${n}): unlimited (.max is ${limit})`);
-            if (n && limit<n)	THROW(`.Acquire(${n}): unsatisfyable (.max is ${limit})`);
+            if (!n && limit<=0)		THROW(`Semaphore: unlimited (.max is ${limit})`);
+            if ( n && limit< n)		THROW(`Semaphore: unsatisfyable ${n} (.max is ${limit})`);
 
             if (run < limit && run+n <= limit)
-              return release_function(n ? n : limit-run);
+              return n ? n : limit-run;
 
             if (!waiting)
               waiting = PO();
-            waiting.count = (waiting.count|0) + 1;
+            waiting.count = (waiting.count|0) + 1;	// Either .Acquire() or .Free() are waiting, too, so increase .wait()
             upd();
-            D('Acquire', 'wait');
+            D('Free', 'wait');
             await waiting.p;
-            D('Acquire', 'cont');
+            D('Free', 'cont');
           }
       }
+    const Acquire = async (...a) => release_function(await Free(...a));
+
     const ret = (..._) => next(new Promise((ok,ko) => waits.push([ok,ko,_])).then(() => (ret.fn ? ret.fn : (...a)=>a)(...ret.args,..._)).finally(() => next(upd(-1))));
     ret.max	= max;
     ret.fn	= fn;
@@ -722,12 +749,18 @@ const Semaphore = (max, fn, ...args) =>
     ret.stop	= () => { maxing = true; return ret };
     ret.start	= () => { if (maxing===true) maxing=false; return next(ret) }
     ret.try	= acquire;
+    ret.acquire	= acquire;
     ret.Acquire	= Acquire;
+    ret.free	= free;
+    ret.Free	= Free;
     ret.Max	= Max;		// wait for max running
+    ret.Idle	= Max;		// wait for Semaphore being idle, convenience
     ret.Min	= Min;		// wait for N started
-    ret.Wait	= Wait;		// wait for N releases
+    ret.WaitN	= WaitN;	// wait for N releases
+    ret.Wait	= _ => { console.debug('Semaphore.Wait() deprecated, use Semaphore.WaitN()'); return WaitN(_) }
+    ret.Waiting	= Waiting;	// wait until N or less are waiting
 //    ret.release	= release;	// I really have no good idea how to implement this the sane way in an async world
-// XXX TODO XXX await sem.aquire(2) /* not saving return */; ..; sem.release(1); ..; sem.release(1); ..; sem.release(1) ==> throws
+// XXX TODO XXX await sem.Aquire(2) /* not saving return */; ..; sem.release(1); ..; sem.release(1); ..; sem.release(1) ==> throws
 // XXX TODO XXX .abort() to abort running Promises (if there is some clever way)
     return ret;
   }
@@ -1618,7 +1651,7 @@ class UniQ extends Emit
       this._Emit(what,d);
       return this;
     }
-  Wait()		// wait for something to happen on Q
+  WaitN()		// wait for something to happen on Q
     {
       if (!this._p)
         this._p	= PO();
@@ -1639,7 +1672,7 @@ class UniQ extends Emit
 // However for this we must be able to count the gets
       this._chg('put', e);				// element added
       while (this._q.length>this._max && this._max>0)
-        await this.Wait();
+        await this.WaitN();
       return e;
     }
   async Get(n)		// get.  You can wait Q above some fillstate
@@ -1647,7 +1680,7 @@ class UniQ extends Emit
       n = n|0;
       if (n<0) n=0;
       while (this._q.length<=n)
-        await this.Wait();
+        await this.WaitN();
       const r = this._q.shift();
       this._cnt.get++;
       this._chg('get', r);				// element removed
@@ -1659,7 +1692,7 @@ class UniQ extends Emit
       if (n<1) n=1;
       n--;
       while (this._q.length+n >= this._max && this._max>n)
-        await this.Wait();
+        await this.WaitN();
       return this._max - this._q.length;
     }
   async Fill(n)		// wait for Q having data.  Returns current fill state
@@ -1667,7 +1700,7 @@ class UniQ extends Emit
       n = n|0;
       if (n<1) n=1;
       while (this._q.length<n)
-        await this.Wait();
+        await this.WaitN();
       return this._q.length;
     }
   async Full()		// wait for Q to get completely filled.  Returns current fill state
@@ -1675,7 +1708,7 @@ class UniQ extends Emit
       n = n|0;
       if (n<1) n=1;
       while (this._q.length<this._max || this._q.length<n)
-        await this.Wait();
+        await this.WaitN();
       return this._q.length;	// this can be >max
     }
   async* [Symbol.asyncIterator]()
