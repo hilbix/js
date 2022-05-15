@@ -337,6 +337,16 @@ class Cancelled
 // - On Cancelled() the .$cancelled property returns the (truthy) array of the given arguments which replaced the r(x) (the [a,y])
 //   Hence you can test with something like .catch(e => { if (e.$cancelled) ..
 //   This also works with try { await r(y) } catch (e)  { if (e.$cancelled) ..
+// - (single_run(fn,a..).cancelfn(cfn,c..))(b..) is the same as single_run(fn,a..)(b..), but sets cfn as function on cancel.
+//   If cfn === false, it mutes/disables/ignores Cancelled exceptions and returns b[0] (undefined by default).
+//   If cfn is not given (falsish), the new Promise is returned.
+//   If cfn === true, the original behavior is restored.
+//   Else cfn is invoked as cfn(...c,a,b) on cancel.
+//   Rationale: If there is a function, give it.
+//   cancelfn(true) means "yes, do the cancel thing"
+//   cancelfn(false) kicks the cancel thing, returning void 0
+//   cancelfn(false, 1) returns the given value (you need to write something before the value)
+//   cancelfn() does not cancel, instead, it returns the latest promise
 const single_run = (fn, ...a) =>
   {
     let invoke, running;
@@ -356,16 +366,31 @@ const single_run = (fn, ...a) =>
         if (running)
           run(...running[0], ...running[1]).then(running[2], running[3]).finally(loop)
       }
-    return (...b) => new Promise((ok, ko) =>
+    const def = (was,a,b) => was[3](new Cancelled(a,b));
+    let cancel = def;
+    const r = (...b) =>
       {
         const was = invoke;
-        //D('SR', 'exec', fn, a, invoke);
-        invoke = [a,b,ok,ko];
+        const p = new Promise((ok, ko) =>
+          {
+            //D('SR', 'exec', fn, a, invoke);
+            invoke = [a,b,ok,ko];
+            if (!running)
+              loop();
+          });
         if (was)
-          was[3](new Cancelled(a,b));
-        if (!running)
-          loop();
-      })
+          cancel(was,a,b,p);
+        return p;
+      };
+    function cancelfn(fn,...c)
+      {
+        cancel = fn
+          ? fn===true  ? def : (was,a,b) => was[2](P(fn,...c,a,b))
+          : fn===false ? was => was[2](c[0]) : (was,a,b,p) => was[2](p);
+        return this;
+      }
+    r.cancelfn = cancelfn;
+    return r;
   };
 
 // Wrap a functioncall such, that it is only called once in a cycle or frame:
