@@ -339,7 +339,7 @@ class Cancelled
 //   This also works with try { await r(y) } catch (e)  { if (e.$cancelled) ..
 // - (single_run(fn,a..).cancelfn(cfn,c..))(b..) is the same as single_run(fn,a..)(b..), but sets cfn as function on cancel.
 //   If cfn === false, it mutes/disables/ignores Cancelled exceptions and returns b[0] (undefined by default).
-//   If cfn is not given (falsish), the new Promise is returned.
+//   If cfn is not given (falsish), the newly created Promise (for the new call) is returned (to the old call), so this follows/waits for the new call.
 //   If cfn === true, the original behavior is restored.
 //   Else cfn is invoked as cfn(...c,a,b) on cancel.
 //   Rationale: If there is a function, give it.
