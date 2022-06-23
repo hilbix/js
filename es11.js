@@ -92,13 +92,75 @@
 
 /* */ const mkArr = x =>	Array.isArray(x) ? x : [x];			// creates single element array from non-Array datatypes
 /* */ const defArr = (x,d) =>	{ x=mkArr(x); return x.length ? x : mkArr(d) }	// same as mkArr, except for [] which becomes default array
-///* */ const flatArr = *(...a) => { while (a.length) { const b=a.shift();  if (!isArray(b)) { yield b; continue; }
+
+// //
+// Nonrecursive Array flattening, similar to [].flat(Infinity)
+// (I am not convinced, that Array.flat() is nonrecursive!)
+//
+// ...[..] and recursions are limited, hence we cannot use them.
+// for (x of [..]) must visit all [..] to avoid recursion.
+// We cannot use .shift() or similar on original arrays.
+//
+// This has O(n) space complexity and O(n) time complexity:
+// - It accesses each element FOUR times, hence O(n):
+//   - FIRST to copy it into a local array to operate on
+//   - SECOND to shift it out to the local array
+//   - THIRD to test it for the type
+//   - FOURTH to output the element (if it is not an Array)
+// - It iterates on empty arrays or single elements, hence O(ld N)
+//   - Only arrays of 2 or more elements do a push onto stack
+//   - So we have a maximum of n/2 pushes, which is O(n)
+//   - However "foreign" (orig) arrays need to be copied to process them
+//   - So in the "already flat" case we have O(n) space need here
+function* flattenArray(...a)
+{
+  for (const stack=a; stack.length; )
+    for (let our = stack.pop(); our.length; )
+      // stack has only our Arrays, so we can use .shift()
+      for (let orig = our.shift();; orig = orig[0])
+        {
+          if (!isArray(orig))           // orig can be anything, void 0, null, {}, [], etc.
+            yield orig;                 // output non-Array element and iterate to next
+          else if (orig.length)         // nonempty array?
+            {
+              if (orig.length===1)      // single element case optimization
+                continue;               // loop to orig[0]
+              if (our.length)           // recursion needed?
+                stack.push(our)         // push what is to do later onto our stack
+              our = Array.from(orig);   // iterate on a copy of orig, so we can use .shift()
+            }
+          break;                        // next iteration
+        }
+}
+// We can avoid the copying by using the original array with an index
+// (However index access might be slower than .shift())
+function* flattenArrayI(...a)
+{
+  for (const stack=[[a,0]]; stack.length; )
+    for (let [arr,i] = stack.pop(); i<arr.length; )
+      for (let orig = arr[i++];; orig = orig[0])
+        {
+          if (!isArray(orig))           // orig can be anything, void 0, null, {}, [], etc.
+            yield orig;                 // output non-Array element and iterate to next
+          else if (orig.length)         // nonempty array?
+            {
+              if (orig.length===1)      // single element case optimization
+                continue;               // loop to orig[0]
+              if (i<arr.length)         // recursion needed?
+                stack.push([arr,i])     // push what is to do later onto our stack
+              arr = orig;               // iterate over orig
+              i   = 0;
+            }
+          break;                        // next iteration
+        }
+}
+// //e
 
 /* */ // I hate this.  Why is debugging Promises so hard?  Why isn't it built in?
 /* */ // Promise.resolve().then(_ => randomly_failing_function()).then(OK).catch(KO).then(...OKO('mypromise'))
 /* */ const KO = (e, ...a) =>	{ D('catch', e, ...a); throw e }	// Promise.reject().catch(KO).then(not_executed)
 /* */ const OB = (...a) =>	Object.assign(Object.create(null), ...a); // Plain Object without protoype (just O considered too error prone)
-// /
+// //
 const OBfix = o =>
   {
     let r;
@@ -112,7 +174,7 @@ const OBfix = o =>
       r[i] = OBfix(o[i]);
     return r;
    };
-// /e
+// //e
 
 /* */ const OK = (v, ...a) =>	{ D('then', v, ...a); return v }	// Promise.resolve().then(OK).then(..)
 /* */ const OKO = (...a) =>	[ v => OK(v, ...a), e => KO(e, ...a) ]	// Promise.reject.then(...OKO('mypromise')).then(not_executed)
@@ -145,7 +207,7 @@ const OBfix = o =>
       //v PostJSON PostText
       //v PutJSON  PutText
 /* */ const PC = P$;	// deprecated
-// /
+// //
 // Promise(s) with timeouts
 // Resolve all given Promises within the given time
 // If one rejects (or timeout) this rejects.
@@ -157,7 +219,7 @@ const Ptimeout = (ms, ...prom) =>
     prom.push(reject)
     return Promise.race(prom);		// Reject after timeout
   };
-// /e
+// //e
 
 /* */ const fromJ	= s => OBfix(JSON.parse(s));	// false === 'constructor' in fromJ('{}')
 /* */ const toJ		= o => JSON.stringify(o);
@@ -1507,6 +1569,7 @@ class _E extends _E0
 //	(For performance reason this is not enforced.)
 // E([e]) === E(e) and E([a,b]) === E(a,b)
 const E0 = _ => _ ? E(_) : void 0;	// or null?
+const EE = (...s) => E(Array.from(flattenArray(s)).join(' ').split(' ').filter(_ => _!='').map(_ => document.getElementById(_)));
 const E = (function(){
   const weak_refs = new WeakMap();
 
