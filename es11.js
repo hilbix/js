@@ -362,7 +362,7 @@ const tmpcache = (fn,...a) =>			// use a real function here to provide 'this'
           ret	= new WeakMap();		// temporary cache
           setTimeout(_ => ret = void 0);	// expire at next loop
         }
-      ret[this]	= void 0;	 		// avoid recursion
+      ret[this]	= void 0;			// avoid recursion
       return ret[this] = fn.apply(this, a);	// cache real value (from this cycle)
     }
 };
@@ -585,7 +585,7 @@ const R = (...a) => new Revocable(...a);
   console.log('main');
 */
 // Semaphore() returns with following properties:
-// .max 	parameter 1  passed to Semaphore (your chosen max value or function).
+// .max		parameter 1  passed to Semaphore (your chosen max value or function).
 // .fn		parameter 2  passed to Semaphore (the function protected by Semaphore)
 // .args	parameter 3+ passed to Semaphore (the first arguments to .fn)
 // .count	number of currently running calls
@@ -1179,8 +1179,8 @@ class _E0 extends Callable
   ONb(type, fn, ...a)	{ return type ? new ON(type, false).add(fn, this, ...a).attach(this) : void 0 }
   onb(...a)		{ this.ONb(...a); return this }
 
-  *[Symbol.iterator]()	{ for (const e of this.__E) yield e }
-  *MAP(fn, ...a)	{ for (const e of this.__E) yield fn(e, ...a) }
+  *[Symbol.iterator]()	{ if (this.__E.length) yield* this.__E; else if (this.__e) yield* Array.from(this.__e.children) }
+  *MAP(fn, ...a)	{ for (const e of this) yield fn(e, ...a) }
   //forEach(...a)	{ return this.run(...a) }	// made no sense!
   foreach(fn,self)	{ this.__E.forEach((e,i) => fn.call(self, E(e), i, this)); return this }
 
