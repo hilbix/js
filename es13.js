@@ -63,7 +63,7 @@
 // Report some error, but do not terminate execution (just returning VOID)
 /* */ const CATCH = function(fn,...a)	{ return CATCH$$(fn,this,a) }	// class { CATCH=CATCH } and then: this.CATCH(this.fn, args..)
 /* */ const CATCH$ = (fn,self,...a)	=> CATCH$$(fn,self,a)		// this.fn(args..) becomes CATCH$(this.fn, this, args..)
-/* */ const CATCH$$ = (fn,self,a)	=> { try { return _FPC.call(fn,self,...a) } catch (e) { DispatchEvent(new ErrorEvent('es11_catched_error_event', {error:e})) } }
+/* */ const CATCH$$ = (fn,self,a)	=> { try { return _FPC.call(fn,self,...a) } catch (e) { DispatchEvent(new ErrorEvent('esXX_catched_error_event', {error:e})) } }
       //^ CONSOLE
 
 /* */ //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
@@ -309,6 +309,7 @@ const HU = x => HE(UE(x));		// HTML+URLencoded special short form		(for inclusio
 const JU = x => UE(toJ(x));		// JSON URLencoded special short form		(for inclusion in URL)
 const JHU = x => HU(toJ(x));		// JSON HTML+URLencoded special short form	(for inclusion in literal DOM)
 
+// (ES11->ES13: I am not sure if and how Babel handles this correctly, so I keep it as-is for now.)
 // Dummy support for perhaps missing WeakRefs.  (This is mainly for Babel)
 // The fallback is not good as it leaks memory, but we cannot implement this any better way here.
 const es11WeakRef = (() =>
