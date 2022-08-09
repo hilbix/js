@@ -1,4 +1,4 @@
-'use strict';	// This is for ES11 aka ES2020
+'use strict';	// This is for ES13 aka ES2022
 // This Works is placed under the terms of the Copyright Less License,
 // see file COPYRIGHT.CLL.  USE AT OWN RISK, ABSOLUTELY NO WARRANTY.
 
@@ -8,7 +8,7 @@
 // <script src="er13.js" data-debug="console-prefix"></script>
 // <script src="er13.js" data-call="function"></script>
 
-const __CATCH__ = (f => f(document.currentScript?.dataset || {debug:'ER11'}, document.currentScript?.url))((ds,url) => {
+const __CATCH__ = (f => f(document.currentScript?.dataset || {debug:'ER13'}, document.currentScript?.url))((ds,url) => {
 
   // __CATCH__(fn): calls fn(e,j) on errors, j is a JSON serializable object
   const CATCH = fn =>
@@ -25,6 +25,7 @@ const __CATCH__ = (f => f(document.currentScript?.dataset || {debug:'ER11'}, doc
       window.addEventListener('error',w,true);
       window.addEventListener('unhandledrejection',w);
       window.addEventListener('es11_catched_error_event',w);
+      window.addEventListener('esXX_catched_error_event',w);
       // do we need even more?
     }
 
