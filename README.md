@@ -6,7 +6,9 @@
 
 Note:
 
-- Current development mostly is in branch [es11](../../tree/es11)
+- **The real development (and the best benefit) mostly is in branch [es12](../../tree/es12)**
+- If you want to see something which uses this, see <https://github.com/hilbix/minion>
+
 
 # Javascript Snippets
 
@@ -80,12 +82,36 @@ Documentation?
 - See source.
 
 
-Submodule links missing.
+Submodule links missing on GitHub.
 
-- `git clone --recursive` works (tested with `git 1.20.1`)
-- [This seems to be a known closed but but still not fully resolved GitHub bug](https://github.community/t5/How-to-use-Git-and-GitHub/Support-Linking-Relative-URL-s-on-submodules/td-p/24650).
-- I cannot use `../js.git` as this will be wrong in almost all situations except my lonely place at GitHub here.
-
+- `git clone --recursive` works
+  - tested with `git 1.20.1` (2021-09-03)
+  - tested with `git 2.30.2` (2022-08-09)
+- [For me this is one of the major bugs of GitHub](https://github.blog/changelog/2021-03-19-hyperlink-support-for-submodules-with-relative-paths/)
+  - Warning!  The link above may evaproate 0.001 as (=atto-seconds) after I post this
+  - [like the old link to my bug vanished](https://github.community/t5/How-to-use-Git-and-GitHub/Support-Linking-Relative-URL-s-on-submodules/td-p/24650), too (it's not in archive.org either).
+- I cannot use `../js` (as noted in the [blog entry link above](https://github.blog/changelog/2021-03-19-hyperlink-support-for-submodules-with-relative-paths/)) as this **will be wrong in allmost all situations** except this lonely place at GitHub here.
+  - GitHub should support what `git` supports, how `git` works and [how `git` is used](https://stackoverflow.com/questions/64810428/can-i-use-git-submodule-within-the-same-repository),
+  - and abstain to offer some proprietary standard, which makes repositories unusable in the real world outside of GitHub.
+  - `git clone --recursive` fails at my side if I use `../js`
+  - Because I use `git config url.X.insteadOf Y` a lot which gets confused by `..` paths
+  - (which is not a `git` bug, as `git` does the very right thing.  This only has trouble with GitHub's interpretation of reality)
+  - I could fix this, of course on `git` level
+  - but why should I fix some proprietary GitHub problem which only shows up due to some issue introduced by GitHub due to some lack of compatibility to `git` in their presentation?
+- This is not the only place where I use this (very well known and supported) feature of `git`, which is incompatible with GitHub's presentation.
+  - **Perhaps you can help and persuade (=pressure) GitHub to add support for `.` paths of repositories.**
+  - I won't do.  Why should I?  It just only affects you (the other 8+ billion people) and not me.
+- FYI:
+  - Using something like `../js` forces you to use the name I have chosen.  For now and in future.
+  - This also kills extremely important features like `git bisect`
+  - So using "GitHub relative URLs" is wrong in almost all possible cases.
+- **Please abstain from using relative '../' repository-URLs in public GitHub repos!
+  - These sort of relative links are a PITA.
+- **Thank you very much** for your understanding!
+- BTW:
+  - Relative links - as offered by GitHub - are still good for you.
+  - But only if you use and rely on GitHub, GitHub, or similar, as most do.
+  - But `git` is so much more than [just those singularities](https://de.wikipedia.org/wiki/Polstelle)!
 
 License?
 
