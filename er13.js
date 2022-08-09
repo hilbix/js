@@ -3,10 +3,10 @@
 // see file COPYRIGHT.CLL.  USE AT OWN RISK, ABSOLUTELY NO WARRANTY.
 
 // Minimalistic global error catcher/reporter:
-// <script src="er11.js" data-post="https://error.example.com/errortarget" data-tag="sometag"></script>
-// <script src="er11.js" data-append="element-id" data-appendms="20000" data-noclick></script>
-// <script src="er11.js" data-debug="console-prefix"></script>
-// <script src="er11.js" data-call="function"></script>
+// <script src="er13.js" data-post="https://error.example.com/errortarget" data-tag="sometag"></script>
+// <script src="er13.js" data-append="element-id" data-appendms="20000" data-noclick></script>
+// <script src="er13.js" data-debug="console-prefix"></script>
+// <script src="er13.js" data-call="function"></script>
 
 const __CATCH__ = (f => f(document.currentScript?.dataset || {debug:'ER11'}, document.currentScript?.url))((ds,url) => {
 
