@@ -1,4 +1,4 @@
-'use strict';	// this is for ES11 aka ES2020
+'use strict';	// this is for ES13 aka ES2022
 // In future: sed -i 's/__\([a-zA-Z]\)/#\1/g'
 // Do not try to access __ things, as IT WILL FAIL in future!
 
@@ -40,7 +40,7 @@
 // - If name ends on $  the call becomes          fn.call(e, ...args)
 // - If name ends on $$ it becomes (fn, args) and fn.apply(e, arg)
 
-// <script src="es11.js" data-debug></script>
+// <script src="es13.js" data-debug></script>
 // data-debug enables debugging
 /* */ let DEBUGGING = this.DEBUGGING || document.currentScript?.dataset?.debug;	// you can change this later
 
