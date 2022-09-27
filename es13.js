@@ -309,6 +309,9 @@ const HU = x => HE(UE(x));		// HTML+URLencoded special short form		(for inclusio
 const JU = x => UE(toJ(x));		// JSON URLencoded special short form		(for inclusion in URL)
 const JHU = x => HU(toJ(x));		// JSON HTML+URLencoded special short form	(for inclusion in literal DOM)
 
+const decodeHTML = _ => { const t=document.createElement('textarea'); t.innerHTML = _; return t.value }
+const encodeHTML = _ => { const t=document.createElement('textarea'); t.innerText = _; return t.innerHTML.replace('"', '&quot;') }
+
 // (ES11->ES13: I am not sure if and how Babel handles this correctly, so I keep it as-is for now.)
 // Dummy support for perhaps missing WeakRefs.  (This is mainly for Babel)
 // The fallback is not good as it leaks memory, but we cannot implement this any better way here.
