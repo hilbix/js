@@ -623,6 +623,9 @@ const R = (...a) => new Revocable(...a);
 //		Min(-2) waits until an Acquire
 // .Waiting(N)	wait until .wait <= N
 //
+// .fifo()	switches in FiFo-queuing-strategy (first in, first out), default
+// .lifo()	switches in LiFo-queuing-strategy (last in, first out)
+//
 // If .max is a function, it is called with the Semaphore (and optional .Acquire() args) can dynamically return how much work to do in parallel.
 // If it returns a Promise, execution halts until the Promise resolves.  If it rejects or .max() throws, this is as if it returns 1
 // .max() is always called when something happens on the Semaphore (work added, finished, etc.), so it can be used to implement progress monitoring.
@@ -832,7 +835,11 @@ const Semaphore = (max, fn, ...args) =>
       }
     const Acquire = async (...a) => release_function(await Free(...a));
 
-    const ret = (..._) => next(new Promise((ok,ko) => waits.push([ok,ko,_])).then(() => (ret.fn ? ret.fn : (...a)=>a)(...ret.args,..._)).finally(() => next(upd(-1))));
+    let discipline = 'push';
+
+    const ret = (..._) => next(new Promise((ok,ko) => waits[discipline]([ok,ko,_])).then(() => (ret.fn ? ret.fn : (...a)=>a)(...ret.args,..._)).finally(() => next(upd(-1))));
+    ret.lifo	= () => { discipline='unshift'; return ret; };
+    ret.fifo	= () => { discipline='push'; return ret; };
     ret.max	= max;
     ret.fn	= fn;
     ret.args	= args;
