@@ -875,7 +875,7 @@ class ON
 
   constructor(type, capture=true)
     {
-      this.__type	= type;
+      this.__type	= type.split(' ');
       this.__capture	= capture;
       this.__el		= [];
       this.__fn		= [];
@@ -907,7 +907,8 @@ class ON
       for (const o of a)
         for (const e of o)
           {
-            e.addEventListener(this.__type, this, this.__capture);
+            for (const t of this.__type)
+              e.addEventListener(t, this, this.__capture);
             this.__el.push(new es11WeakRef(e));
           }
       return this;
@@ -920,7 +921,9 @@ class ON
       for (const a of l)
         {
           const o=l.deref();
-          if (o) o.removeEventListener(this.__type, this);
+          if (o)
+            for (const t of this.__type)
+              o.removeEventListener(t, this);
         }
       return this;
     }
@@ -1227,7 +1230,7 @@ class _E0 extends Callable
   // const usr = this.getUser();
   // // in the first 3, usr -----vvv is a bit redundant ----------------vvv
   // E('out').clr().text('H').if(usr, (_,u) =>       _.text(dump(u))  , usr).text('W');	// H${dump(usr)})W
-  // E('out').clr().text('H').if(usr, (_,u) =>   _.DIV.text(dump(u))  , usr).text('W');	// H<div>${dump(usr)}W
+  // E('out').clr().text('H').if(usr, (_,u) =>   _.DIV.text(dump(u))  , usr).text('W');	// H<div>${dump(usr)}</div>W
   // E('out').clr().text('H').if(usr, (_,u) => { _.DIV.text(dump(u)) }, usr).text('W');	// HW<div>${dump(usr)}</div>
   // E('out').clr().text('H').cond(   (_,u) => { _.DIV.text(dump(u)) }, usr).text('W');	// HW<div>${dump(usr)}</div>
   // E('out').clr().text('H').run(    (_,u) => u?_.DIV.text(dump(u)):0, usr).text('W');	// HW<div>${dump(usr)}</div>
@@ -1480,19 +1483,19 @@ class _E extends _E0
   get SAMP()		{ return this._MK('samp') }
   get MARK()		{ return this._MK('mark') }		// IE9+
 
-  get B()		{ return this._MK('b') }
+  get B()		{ return this._MK('b') }		// bold
   get Q()		{ return this._MK('q') }
   get S()		{ return this._MK('s') }
   get U()		{ return this._MK('u') }
   get EM()		{ return this._MK('em') }
-  get I()		{ return this._MK('i') }
+  get I()		{ return this._MK('i') }		// italics
   get STRONG()		{ return this._MK('strong') }
   get SMALL()		{ return this._MK('small') }
-  get SUB()		{ return this._MK('sub') }
-  get SUP()		{ return this._MK('sup') }
+  get SUB()		{ return this._MK('sub') }		// subscript
+  get SUP()		{ return this._MK('sup') }		// superscript
   get KBD()		{ return this._MK('kbd') }
-  get TT()		{ return this._MK('tt') }
-  get CODE()		{ return this._MK('code') }
+  get TT()		{ return this._MK('tt') }		// typewriter
+  get CODE()		{ return this._MK('code') }		// codeformatter
   get VAR()		{ return this._MK('var') }
 
   get DATA()		{ return this._MK('data') }		// IE-
@@ -1504,11 +1507,16 @@ class _E extends _E0
   get RUBY()		{ return this._MK('ruby') }
   get RP()		{ return this._MK('rp') }
   get RT()		{ return this._MK('rt') }
-  get RUBY()		{ return this._MK('ruby') }
 
   img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
+  b(...a)		{ this.B.text(...a); return this }
+  u(...a)		{ this.U.text(...a); return this }
+  sub(...a)		{ this.SUB.text(...a); return this }
+  sup(...a)		{ this.SUP.text(...a); return this }
+  tt(...a)		{ this.TT.text(...a); return this }
+  code(...a)		{ this.CODE.text(...a); return this }
 
   get $options()	{ return (function *() { for (const a of this.$.selectedOptions) yield E(a) }).call(this) }
   get $option()		{ return E(this.$?.selectedOptions[0]) }
@@ -1525,6 +1533,7 @@ class _E extends _E0
   href(href)		{ return this.attr({href}) }
   id(id)		{ return this.attr({id}) }
   name(name)		{ return this.attr({name}) }
+  title(title)		{ return this.attr({title}) }
 
   // .attr({attr:val}) to set DOM attribute on TAG
   // .attr({attr:void 0}) removes DOM attr again
@@ -1630,7 +1639,17 @@ const E = (function(){
 })();
 
 // Create a TEXT node
-const T = (...s) => E(document.createTextNode(s.join(' ')));
+const T = (...s) =>
+  {
+    if (s.length==1 && !s[0]?.then) return E(document.createTextNode(s[0]));
+
+    const t = document.createTextNode('');
+    const r = [];
+    const update = once_per_frame(() => t.nodeValue = r.join(' '));
+    s.forEach(async (_,i) => { r[i] = '*'; try { r[i] = await _ } catch(e) { r[i]=`${e}` }; update() });
+    update();
+    return E(t);
+  }
 
 // Create DOM Elements wrapped in class _E
 // X('div') creates a DIV (compare E.DIV)
