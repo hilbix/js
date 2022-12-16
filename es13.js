@@ -42,7 +42,9 @@
 
 // <script src="es13.js" data-debug></script>
 // data-debug enables debugging
-/* */ let DEBUGGING = this.DEBUGGING || document.currentScript?.dataset?.debug;	// you can change this later
+try { // Else workers die if you try to access 'document', which is plain bullshit.
+/* */ var DEBUGGING = this?.DEBUGGING || document?.currentScript?.dataset?.debug;	// you can change this later
+} catch {};
 
 /* */ const DispatchEvent = async e => await window.dispatchEvent(e);			// do it asynchronously to not stop execution
 /* */ const _FPA = Function.prototype.apply;						// _FPA.call(fn,THIS,[args..])
@@ -1237,9 +1239,15 @@ class _E0 extends Callable
   // // In the last two you can put this.getUser() there directly ------^^^, the last is a bit less readable
   if(...a)		{ return       this.iF(...a) || this }	// returns this as default
   async If(...a)	{ return await this.iF(...a) || this }	// async .if()
-  iF(bool,fn,...a)	{ return bool && fn(this,...a) }	// run fn and returns it's value if bool truish, else void 0
+  iF(bool,fn,...a)	{ return bool && fn(this,...a) }	// return bool if falsish else run fn and returns it's value
   async IF(...a)	{ return await this.iF(...a) || this }	// returns async this as default
   // .If(true,fn,...a) is a redundant form of .Run(fn,...a)
+
+  // same as before but with this as this instead of first value
+  if$(...a)		{ return       this.iF$(...a) || this }	// returns this as default
+  async If$(...a)	{ return await this.iF$(...a) || this }	// async .if$()
+  iF$(bool,fn,...a)	{ return bool && fn.call(this,...a) }	// return bool if falsish else run fn and returns it's value
+  async IF$(...a)	{ return await this.iF$(...a) || this }	// returns async this as default
 
   // cond(fna, a, fnb, b, fnc..)	// you can call it as .cond(fn,a) .cond(fn) or even .cond() of course
   // calls fna if a else fnb if b else fnc .. and so on
@@ -1508,7 +1516,8 @@ class _E extends _E0
   get RP()		{ return this._MK('rp') }
   get RT()		{ return this._MK('rt') }
 
-  img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }
+  a(url,text,target)	{ this.A.href(url).text(text).if$(target, this.target, target); return this }
+  img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }	// .img(url, function(args..) { this === E.IMG.src(src) }, args..)
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
   b(...a)		{ this.B.text(...a); return this }
