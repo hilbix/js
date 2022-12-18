@@ -1206,7 +1206,7 @@ class _E0 extends Callable
   ONb(type, fn, ...a)	{ return type ? new ON(type, false).add(fn, this, ...a).attach(this) : void 0 }
   onb(...a)		{ this.ONb(...a); return this }
 
-  *[Symbol.iterator]()	{ if (this.__E.length) yield* this.__E; else if (this.__e) yield* Array.from(this.__e.children) }
+  *[Symbol.iterator]()	{ if (this.__E.length) yield* this.__E; else if (this.__e) yield* Array.from(this.__e.childNodes) }
   *MAP(fn, ...a)	{ for (const e of this) yield fn(e, ...a) }
   //forEach(...a)	{ return this.run(...a) }	// made no sense!
   foreach(fn,self)	{ this.__E.forEach((e,i) => fn.call(self, E(e), i, this)); return this }
