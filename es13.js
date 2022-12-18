@@ -157,6 +157,17 @@ function* flattenArrayI(...a)
         }
 }
 // //e
+// //
+// [a,b,c] => {}[fold(a)] = [a]
+// also ignores nullish arguments
+function FoldArraysIntoObject(fold, ...arrays)
+{
+  const o = {};
+  for (const a of arrays)
+    a?.forEach((v,..._) => { const k = fold.call(this,v,..._);  (o[k] || (o[k]=[])).push(v) });
+  return o;
+}
+// //e
 
 /* */ // I hate this.  Why is debugging Promises so hard?  Why isn't it built in?
 /* */ // Promise.resolve().then(_ => randomly_failing_function()).then(OK).catch(KO).then(...OKO('mypromise'))
