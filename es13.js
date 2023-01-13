@@ -1661,12 +1661,30 @@ const E = (function(){
 // Create a TEXT node
 const T = (...s) =>
   {
-    if (s.length==1 && !s[0]?.then) return E(document.createTextNode(s[0]));
+    // T('string') is perfectly normal
+    if (s.length==1 && !s[0]?.then && !isFunction(s[0])) return E(document.createTextNode(s[0]));
 
-    const t = document.createTextNode('');
-    const r = [];
+    // asynchronous process the contents
+    // T(Promise) or T(fn)
+    // notyet: T(E())
+
+    /* create fragments per entry	*/
+    const t = document.createTextNode(s[0]);
+    const r = s.map('*');
     const update = once_per_frame(() => t.nodeValue = r.join(' '));
-    s.forEach(async (_,i) => { r[i] = '*'; try { r[i] = await _ } catch(e) { r[i]=`${e}` }; update() });
+    s.forEach((_,i) =>
+      P(_)
+      .then(_ =>
+        {
+          if (_?.then)
+            return _;
+          if (isFunction(_))
+            return _();
+          r[i]	= _;
+          update();
+        })
+      .catch(e => r[i]=`${e}`)
+      );
     update();
     return E(t);
   }
