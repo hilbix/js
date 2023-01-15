@@ -79,6 +79,34 @@ try { // Else workers die if you try to access 'document', which is plain bullsh
       //v Fetch FetchProgress fetchProgress
       //v fromJ
       //v Get GetJSON GetText
+// //
+// for more easy compare: GetKeyCode(event) => {k,m,s} (plus uppercase flags from m/s)
+// m: Shift Control Alt Meta
+// s: capsLock Numlock sRolllock altGraph	// future: conTextmenu
+// Future: .S represents the detected key number (left:1, right:2, and so on)
+// But without our own global generic keyboard processor this is not supported by browsers today.
+// This sadly also includes things like ContextMenu (X).
+function GetKeyCode(e)
+{
+  const o = { k:e.code };
+
+  var m='';
+  if (e.shiftKey)       { o.S=-1; m += 'S' }
+  if (e.ctrlKey)        { o.C=-1; m += 'C' }
+  if (e.altKey)         { o.A=-1; m += 'A' }
+  if (e.metaKey)        { o.M=-1; m += 'M' }
+  o.m   = m;
+
+  var s='';
+  if (e.getModifierState('CapsLock'))   { o.L=-1; s += 'L' }
+  if (e.getModifierState('NumLock'))    { o.N=-1; s += 'N' }
+  if (e.getModifierState('ScrollLock')) { o.R=-1; s += 'R' }
+  if (e.getModifierState('AltGraph'))   { o.G=-1; s += 'G' }
+  o.s   = s;
+
+  return o;
+}
+// //e
       //v IGN
 /* */ const isArray	= Array.isArray;
 /* */ const isFunction	= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
@@ -1205,6 +1233,33 @@ class _E0 extends Callable
   // onb() and ONb use Bubbling phase, so are on reverse order
   ONb(type, fn, ...a)	{ return type ? new ON(type, false).add(fn, this, ...a).attach(this) : void 0 }
   onb(...a)		{ this.ONb(...a); return this }
+  // onkey('keydown', { '_Enter _NumpadEnter':function (ev,el,k,...args) { return true } }, args..)
+  // fn() returns truish: Event swallowed
+  // fn() throws: handler is removed
+  // Sequence of function calls: s_m_k then m_k then k
+  onkey(type,o,...a)
+    {
+      const on = new ON(type).add((ev,...b) =>
+        {
+          const k = GetKeyCode(ev);
+          console.log('onkey', type, k, b);
+          return check(ev,k, `${k.s}_${k.m}_${k.k}`) || check(ev,k, `${k.m}_${k.k}`) || check(ev,k, `${k.k}`);
+        }).attach(this);
+      const check = (_,k,i) =>
+        {
+          try {
+            const fn = c[i];
+            if (fn) return fn(_,this,k,...a);
+          } catch (e) {
+            delete c[i];
+            if (!Object.keys(c).length)
+              on.detach();
+          }
+        }
+      const c = {};
+      for (const [k,v] of Object.entries(o)) for (const s of k.split()) c[k]=v;
+      return this;
+    };
 
   *[Symbol.iterator]()	{ if (this.__E.length) yield* this.__E; else if (this.__e) yield* Array.from(this.__e.childNodes) }
   *MAP(fn, ...a)	{ for (const e of this) yield fn(e, ...a) }
@@ -2408,8 +2463,8 @@ class LRU		// Clean LRU key/value cache implementation
     get $max()	{ return this._max }
     set $max(m)	{ this._max = isInt(m) && m>0 ? m : 10 }	// this does no cleanup by purpose
 
-    async Def(k,f,...a)	{ const e = this._get_(k); if (e) return e.v; const v = await f(...a); this.set(k,v); return v; }
-    DEF(k,f,...a)	{ const e = this._get_(k); if (e) return e.v; const v =       f(...a); this.set(k,v); return v; }
+    async Def(k,f,...a)	{ const e = this._get_(k); if (e) return e.v; const v = f(...a); this.set(k,v); return v.then(_ => { const o = this._get_(k); return o.v === v ? this.Set(k,_) : o.v }) }
+    DEF(k,f,...a)	{ const e = this._get_(k); if (e) return e.v; const v = f(...a); this.set(k,v); return v; }
     GET(k, def)	{ const e = this._get_(k); return e ? e.v : def }	// get key value (or default)
     DEL(k,d)	{ return this._get_(k) ? this.POPM().v : d }	// remove key (if exist) and return v (or default)
 
@@ -2443,6 +2498,7 @@ class LRU		// Clean LRU key/value cache implementation
         this._size	= 0;
         return this;
       }
+    Set(k,v) { this.set(k,v); return v }
     set(k,v)							// add key with value to LRU
       {
         let e = this._get_(k);
