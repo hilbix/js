@@ -12,16 +12,16 @@
 # Some script is written in ES99999999999999999999999999999999999999999999999999999999999999999999999999999999
 # running fine in Firefox/Chrome version 9999999999999999999999999999999999999999999999999999999999999999999.0 but not below.
 # The script is not a module, not something else or anything.  Just a normal plain top level window-namespace polluting script.  But working!
-# And it should be transpiled to ES5 to run on old browsers.  WITH NO CHANGES WHATSOEVER TO OTHER COMPONENTS EXCEPT THE SCRIPT!
+# And it should be transpiled to ES6 to run on old browsers.  WITH NO CHANGES WHATSOEVER TO OTHER COMPONENTS EXCEPT THE SCRIPT!
 #
 # Hence no modules.  No html changes.  No nothing not no no nononononooooooooo!
 #
 # COMPLETE FAIL:
 #
-# - Most Transpilers are so old (read: 1 feature behind), such they are not capable to properly tranform working code into ES5.
+# - Most Transpilers are so old (read: 1 feature behind), such they are not capable to properly tranform working code into ES6.
 #   - The only one working seems to be Babel, but Babel uses require() to include missing parts.  WTF?
 # - For require() you need bundlers, but those always transform the input into modules.  WTF WHY?
-#   - Hence the result will never work in ES5, as modules are not understood in ES5.
+#   - Hence the result will be unusable, as when the original was no module the result must not be a module either.
 #
 # Solution:
 #
