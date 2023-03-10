@@ -353,6 +353,8 @@ const JHU = x => HU(toJ(x));		// JSON HTML+URLencoded special short form	(for in
 const decodeHTML = _ => { const t=document.createElement('textarea'); t.innerHTML = _; return t.value }
 const encodeHTML = _ => { const t=document.createElement('textarea'); t.innerText = _; return t.innerHTML.replace('"', '&quot;') }
 
+const strsplice = (s,from,to,replace) => `${s.substring(0,from)}${replace}${s.substring(to)}`;
+
 // (ES11->ES13: I am not sure if and how Babel handles this correctly, so I keep it as-is for now.)
 // Dummy support for perhaps missing WeakRefs.  (This is mainly for Babel)
 // The fallback is not good as it leaks memory, but we cannot implement this any better way here.
@@ -1465,6 +1467,14 @@ class _E extends _E0
 
   // Only create Style-class if it is really needed
   get $style()		{ return this.__cache.style ? this.__cache.style : this.__cache.style = Styles(this) }
+
+  get $selection()	{ this.$.value.substring(this.$.selectionStart, this.$.selectionEnd) }	// XXX TODO XXX $all
+  set $selection(v)	{ this.selection(s) }
+  // .selectionStart changes if .value is modified
+  selection(s)		{ const $ = this.$; const p = $.selectionStart; $.value = strsplice($.value,p,$.selectionEnd, s); $.selectionStart = $.selectionEnd = p; return this }	// XXX TODO XXX $all
+  // .selectionEnd may change if .selectionStart is modified
+  cursormove(delta)	{ const $ = this.$; const a = $.selectionStart; const b = $.selectionEnd; $.selectionStart = a+delta; $.selectionEnd = b+delta; return this }		// XXX TODO XXX $all
+  editval(s)		{ return this.selection(s).cursormove(s.length) }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(X(e)).attr(attr) }
