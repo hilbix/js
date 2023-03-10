@@ -86,7 +86,7 @@ try { // Else workers die if you try to access 'document', which is plain bullsh
 // Future: .S represents the detected key number (left:1, right:2, and so on)
 // But without our own global generic keyboard processor this is not supported by browsers today.
 // This sadly also includes things like ContextMenu (X).
-function GetKeyCode(e)
+const GetKeyCode = e =>
 {
   const o = { k:e.code };
 
