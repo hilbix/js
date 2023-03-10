@@ -1257,7 +1257,7 @@ class _E0 extends Callable
           }
         }
       const c = {};
-      for (const [k,v] of Object.entries(o)) for (const s of k.split()) c[k]=v;
+      for (const [k,v] of Object.entries(o)) for (const s of k.split()) c[s]=v;
       return this;
     };
 
