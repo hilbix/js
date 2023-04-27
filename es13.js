@@ -1373,6 +1373,11 @@ class _E0 extends Callable
   // To always resolve to this with Switch(), use something like:
   // .Run(_ => _.Switch(..).then(() => _))
   // .Await(_ => _.Switch(..)).then(_ =>
+
+  // const r=[]; e.TABLE.TR.td('hello').run(_ => r.push(_.TD.text('world')).td('again');
+  // const r=[]; e.TABLE.TR.td('hello').TD.push(r).text('world').$$.td('again');
+  // const r=[]; e.TABLE.TR.td('hello').TD.text('world').push(r).$$.td('again');
+  push(...a) { a.forEach(_ => isFunction(_) ? _(this) : _.push(this); return this }
   };
 
 class _E extends _E0
