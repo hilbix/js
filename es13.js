@@ -963,10 +963,10 @@ class ON
       this.__el=[];
       for (const a of l)
         {
-          const o=l.deref();
+          const o=a.deref();
           if (o)
             for (const t of this.__type)
-              o.removeEventListener(t, this);
+              o.removeEventListener(t, this, this.__capture);
         }
       return this;
     }
