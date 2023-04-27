@@ -18,7 +18,7 @@ const __CATCH__ = (f => f(document.currentScript?.dataset || {debug:'ER13'}, doc
         let o={type:e.toString?.()}
         if (v?.stack) o.stack = v.stack;
         else o.reason = e.reason;	// Without .catch(THROW) you do not get a stackframe from Promise.reject()!
-	if (v?.cause) o.cause = v.cause;
+        if (v?.cause) o.cause = v.cause;
         if (v?.message) o.message = v.message;
         ['filename','lineno','colno'].filter(_ => e[_]).forEach(_ => o[_]=e[_]);
         fn(e, o);
