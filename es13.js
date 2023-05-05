@@ -1193,13 +1193,19 @@ const Styles = (props =>
 const FRAGMENT = () => document.createDocumentFragment();
 
 // https://hackernoon.com/creating-callable-objects-in-javascript-d21l3te1
+// I learned that CSP forbids `super('string')`, too.  Hence this is unusable.
 class Callable extends Function
   {
   constructor()
     {
-      super('...args', 'return this._bound._call(...args)');
-      this._bound = this.bind(this);
-      return this._bound;
+      // DOES NOT WORK: super('...args', 'return this._bound._call(...args)');
+      //this._bound = this.bind(this);
+      //return this._bound;
+      // Proxy() cannot be used, as it requires super() which is blocked, too.
+      // DOES NOT WORK: super();
+      // return new Proxy(this, { apply: (t,s,a) => t._call(...a)});	// I don't like it
+      const fn = function(...a) { return fn._call(...a) }
+      return Object.setPrototypeOf(fn, new.target.prototype);	// SLOW AS HELL
     }
   // _call(...a) { .. } must be implemented in subclass
   };
