@@ -49,7 +49,7 @@ ov() { o v "$@"; }
 xv() { x v "$@"; }
 OUT() { "${@:2}" >"$1"; }
 
-ov TMP tempfile
+ov TMP mktemp
 trap 'rm -f "$TMP"' 0
 
 STDERR
@@ -109,9 +109,10 @@ bundle()
 {
 out // DEBUG "<script src=\"$SCRIPTSRC\" data-debug></script>"
 o cat <<EOF
-window.require = (function(orig, _)
+require = (function(orig,cs, _)
   {
     var r = [];
+    var debug = cs && cs.data && cs.data.debug;
     function require(x, p)
       {
         // relative paths
@@ -132,6 +133,8 @@ window.require = (function(orig, _)
         // if not bundled, forward to others
         if (!_[x])
           {
+            if (debug)
+              console.error('require(orig):', x);
             if (orig)
               return orig(x);
             throw 'require(): not found: '+x;
@@ -142,13 +145,13 @@ window.require = (function(orig, _)
         p = _[x][0];
         _[x][1](m, function(x) { return require(x, p) });
 
-        if (document.currentScript && document.currentScript.dataset && document.currentScript.dataset.debug)
-          console.log('require', x, p, m.exports);
+        if (debug)
+          console.error('require(local):', x, p, m.exports);
 
         return m.exports;
       }
     return function(x) { return r[x] || (r[x]=require(x, '')) };
-  })(window.require,
+  })(this.window && window.require, this.document && document.currentScript,
 EOF
 
 first='{'
