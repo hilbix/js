@@ -1735,10 +1735,11 @@ const E = (function(){
 })();
 
 // Create a TEXT node
-const T = (...s) =>
+const TT = _ => E(_ instanceof _E0 || _ instanceof Node ? _ : document.createTextNode(`${_}`));
+const T = function (...s)	// needs a bound 'this'
   {
     // T('string') is perfectly normal
-    if (s.length==1 && !s[0]?.then && !isFunction(s[0])) return E(document.createTextNode(s[0]));
+    if (s.length==1 && !s[0]?.then && !isFunction(s[0])) return TT(s[0]);
 
     // asynchronous process the contents
     // T(Promise) or T(fn)
@@ -1750,22 +1751,21 @@ const T = (...s) =>
     const e = E(r);
     s.forEach(async (_,i) =>
       {
+        let x;
         try {
           for (;;)
             {
-              const x = await _;
-              if (!isFunction(x))
-                {
-                  r[i] = x;
-                  update();
-                  return;
-                }
+              x = await _;
+              // x.then already consumed by await
+              if (!isFunction(x) || x instanceof _E0)	// isFunction(E()) is always true!
+                break;
               _ = x(this);
             }
         } catch (e) {
-          r[i] = `${e}`;
-          update();
+          x	= `${e}`;
         }
+        //if (x instanceof _E0 && x.$parent) x='';		// wrong hack, use T(_ => { _.DIV.text('hello') }) in that case!
+        return r[i].replaceWith(e.$all[i] = TT(x||'').$);	// XXX TODO XXX BUG should be $all
       });
     return e;
   }
