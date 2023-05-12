@@ -1489,7 +1489,7 @@ class _E extends _E0
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(X(e)).attr(attr) }
-  TEXT(...s)		{ return this._ADD(T(...s)) }
+  TEXT(...s)		{ return this._ADD(T.apply(this, s)) }
   text(...s)
     {
       for (const a of s)
@@ -1744,25 +1744,30 @@ const T = (...s) =>
     // T(Promise) or T(fn)
     // notyet: T(E())
 
-    /* create fragments per entry	*/
-    const t = document.createTextNode(s[0]);
-    const r = s.map('*');
-    const update = once_per_frame(() => t.nodeValue = r.join(' '));
-    s.forEach((_,i) =>
-      P(_)
-      .then(_ =>
-        {
-          if (_?.then)
-            return _;
-          if (isFunction(_))
-            return _();
-          r[i]	= _;
+//    const t = document.createTextNode(s[0]);
+//    const update = once_per_frame(() => t.nodeValue = r.join(' '));
+    const r = s.map(_ => document.createTextNode('*'));	// create dummy text entry per entry
+    const e = E(r);
+    s.forEach(async (_,i) =>
+      {
+        try {
+          for (;;)
+            {
+              const x = await _;
+              if (!isFunction(x))
+                {
+                  r[i] = x;
+                  update();
+                  return;
+                }
+              _ = x(this);
+            }
+        } catch (e) {
+          r[i] = `${e}`;
           update();
-        })
-      .catch(e => r[i]=`${e}`)
-      );
-    update();
-    return E(t);
+        }
+      });
+    return e;
   }
 
 // Create DOM Elements wrapped in class _E
