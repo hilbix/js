@@ -1,0 +1,332 @@
+# !! THIS CODE IS NOT MEANT TO BE KEPT COMPATIBLE TO ES12 OR BELOW !!
+# (You can BABEL and Polyfills of course.  See generated md5.js)
+#
+# This code is parsed through ./unroll.sh to output the real JS.
+# TBD: It runs on Big endian, too, but is a bit slower due to swap.
+#
+# vim: ft=javascript :
+#
+# I need small and fast code, which must not carry any Copyright,
+# and which runs in non-HTTPS-context, too.
+# Hence this here is free as in free beer, free speech and free baby.
+#
+# Based on the reference C code of SHA256 handed
+# (hence without copyright) analogous to my md5 variant
+# and possibly some ideas found elsewhere.
+
+'use strict';
+// This is free as in free beer, free speech and free baby.
+// IMPORTANT!  NEVER COVER THIS CODE WITH A COPYRIGHT
+// as this might break German Urheberrecht!
+// If you need to state a Copyright, excempt this code from it!
+//
+// How to use?
+//	<script src="sha256.js"></script>
+// then
+//	const shas256 = SHA256.md5('string');
+// or
+//	const shas256 = new SHA256();
+//	const a = shas256.init().update_str('str1').update_str('str2').end().$hex;
+//	const b = shas256.init().update8(new UInt8Array(something))   .end().$bin;
+// This can be repeated:        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+const SHA256 = (_=>_())(() => {
+
+  function D(...a)
+    {
+      const p = [];
+      for (const x of a)
+        {
+           if ('string' === typeof x)
+             p.push(x);
+           else if (typeof x !== 'object')
+             p.push(`${Number(x>>>0).toString(16)}`.padStart(8,'0'));
+           else if (x.BYTES_PER_ELEMENT)
+             p.push(Array.from(x).map(_ => _.toString(16).padStart(x.BYTES_PER_ELEMENT*2, '0')).join('_'));
+           else
+             p.push(JSON.stringify(x));
+        }
+      console.log(p.join('\n'));
+      console.log('-------');
+    }
+
+  // Class layout analogous to md5c.js.in, for additional comments see there.
+  // I need a stable independent reference code without additional dependencies.
+  // Hence no inheritance (yet).  Perhaps future will bring a modular version.
+  class SHA256
+    {
+    big_endian()
+      {
+        const b	= new ArrayBuffer(4);
+
+        new Uint32Array(b)[0]	= 0x12345678;
+        return new Uint8Array(b)[0] === 0x12;
+      }
+    constructor()
+      {
+        const b		= new ArrayBuffer(64);
+        this.in8	= new Uint8Array(b);
+        this.in32	= new Uint32Array(b);
+
+        this.enc	= new TextEncoder();
+
+        this.trafo	= this._trafo;
+        if (!this.big_endian())
+          this.swap	= this._swap;
+      }
+    _swap(a32)
+      {
+        for (let i = a32.length; --i>=0; )
+          {
+            let x	= a32[i];
+            x = ((x>> 8) & 0x00ff00ff) | ((x<< 8) & 0xff00ff00);
+            x = ((x>>16) & 0x0000ffff) | ((x<<16) & 0xffff0000);
+            a32[i]	= x;
+          }
+      }
+
+// XXX bis hier korrekt
+///////////////////////
+
+!ctx	a 0
+!ctx	b 1
+!ctx	c 2
+!ctx	d 3
+!ctx	e 4
+!ctx	f 5
+!ctx	g 6
+!ctx	h 7
+
+!var	0
+!var	1
+!var	2
+!var	3
+!var	4
+!var	5
+!var	6
+!var	7
+!var	8
+!var	9
+!var	10
+!var	11
+!var	12
+!var	13
+!var	14
+!var	15
+
+#	1  2 3 4 5        6 7 8 9 10
+!F1	h  0 e g f 428a2f98 d a b c
+!F1	g  1 d f e 71374491 c h a b
+!F1	f  2 c e d b5c0fbcf b g h a
+!F1	e  3 b d c e9b5dba5 a f g h
+!F1	d  4 a c b 3956c25b h e f g
+!F1	c  5 h b a 59f111f1 g d e f
+!F1	b  6 g a h 923f82a4 f c d e
+!F1	a  7 f h g ab1c5ed5 e b c d
+!F1	h  8 e g f d807aa98 d a b c
+!F1	g  9 d f e 12835b01 c h a b
+!F1	f 10 c e d 243185be b g h a
+!F1	e 11 b d c 550c7dc3 a f g h
+!F1	d 12 a c b 72be5d74 h e f g
+!F1	c 13 h b a 80deb1fe g d e f
+!F1	b 14 g a h 9bdc06a7 f c d e
+!F1	a 15 f h g c19bf174 e b c d
+
+#	 1  2  3  4 5 6 7 8        9 10 11 12 13
+!F2	 0  1 14  9 h e g f e49b69c1  d  a  b  c
+!F2	 1  2 15 10 g d f e efbe4786  c  h  a  b
+!F2	 2  3  0 11 f c e d 0fc19dc6  b  g  h  a
+!F2	 3  4  1 12 e b d c 240ca1cc  a  f  g  h
+!F2	 4  5  2 13 d a c b 2de92c6f  h  e  f  g
+!F2	 5  6  3 14 c h b a 4a7484aa  g  d  e  f
+!F2	 6  7  4 15 b g a h 5cb0a9dc  f  c  d  e
+!F2	 7  8  5  0 a f h g 76f988da  e  b  c  d
+!F2	 8  9  6  1 h e g f 983e5152  d  a  b  c
+!F2	 9 10  7  2 g d f e a831c66d  c  h  a  b
+!F2	10 11  8  3 f c e d b00327c8  b  g  h  a
+!F2	11 12  9  4 e b d c bf597fc7  a  f  g  h
+!F2	12 13 10  5 d a c b c6e00bf3  h  e  f  g
+!F2	13 14 11  6 c h b a d5a79147  g  d  e  f
+!F2	14 15 12  7 b g a h 06ca6351  f  c  d  e
+!F2	15  0 13  8 a f h g 14292967  e  b  c  d
+# same construction, different constants
+!F2	 0  1 14  9 h e g f 27b70a85  d  a  b  c
+!F2	 1  2 15 10 g d f e 2e1b2138  c  h  a  b
+!F2	 2  3  0 11 f c e d 4d2c6dfc  b  g  h  a
+!F2	 3  4  1 12 e b d c 53380d13  a  f  g  h
+!F2	 4  5  2 13 d a c b 650a7354  h  e  f  g
+!F2	 5  6  3 14 c h b a 766a0abb  g  d  e  f
+!F2	 6  7  4 15 b g a h 81c2c92e  f  c  d  e
+!F2	 7  8  5  0 a f h g 92722c85  e  b  c  d
+!F2	 8  9  6  1 h e g f a2bfe8a1  d  a  b  c
+!F2	 9 10  7  2 g d f e a81a664b  c  h  a  b
+!F2	10 11  8  3 f c e d c24b8b70  b  g  h  a
+!F2	11 12  9  4 e b d c c76c51a3  a  f  g  h
+!F2	12 13 10  5 d a c b d192e819  h  e  f  g
+!F2	13 14 11  6 c h b a d6990624  g  d  e  f
+!F2	14 15 12  7 b g a h f40e3585  f  c  d  e
+!F2	15  0 13  8 a f h g 106aa070  e  b  c  d
+# same construction, different constants
+!F2	 0  1 14  9 h e g f 19a4c116  d  a  b  c
+!F2	 1  2 15 10 g d f e 1e376c08  c  h  a  b
+!F2	 2  3  0 11 f c e d 2748774c  b  g  h  a
+!F2	 3  4  1 12 e b d c 34b0bcb5  a  f  g  h
+!F2	 4  5  2 13 d a c b 391c0cb3  h  e  f  g
+!F2	 5  6  3 14 c h b a 4ed8aa4a  g  d  e  f
+!F2	 6  7  4 15 b g a h 5b9cca4f  f  c  d  e
+!F2	 7  8  5  0 a f h g 682e6ff3  e  b  c  d
+!F2	 8  9  6  1 h e g f 748f82ee  d  a  b  c
+!F2	 9 10  7  2 g d f e 78a5636f  c  h  a  b
+!F2	10 11  8  3 f c e d 84c87814  b  g  h  a
+!F2	11 12  9  4 e b d c 8cc70208  a  f  g  h
+!F2	12 13 10  5 d a c b 90befffa  h  e  f  g
+!F2	13 14 11  6 c h b a a4506ceb  g  d  e  f
+!F2	14 15 12  7 b g a h bef9a3f7  f  c  d  e
+!F2	15  0 13  8 a f h g c67178f2  e  b  c  d
+
+#:F1	D(a,b,c,d,e,f,g,h,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15)
+:F1	$1 = $1 + v$2 + ( $3>>>6 ^ $3>>>11 ^ $3>>>25 ^ $3<<26 ^ $3<<21 ^ $3<<7 ) +  ( $4^$3 & ($5^$4) ) + 0x$6 |0;
+:F1	$7 = $7 + $1 |0;
+:F1	$1 = $1 + (($8 & $9) ^ ($10 & ($8 ^ $9))) + ($8>>>2 ^ $8>>>13 ^ $8>>>22 ^ $8<<30 ^ $8<<19 ^ $8<<10) |0;
+ 
+#:F2	D(a,b,c,d,e,f,g,h,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15)
+:F2	v$1 = v$1 + ( v$2>>>7 ^ v$2>>>18 ^ v$2>>>3  ^ v$2<<25 ^ v$2<<14 ) + ( v$3>>>17 ^ v$3>>>19 ^ v$3>>>10 ^ v$3<<15 ^ v$3<<13 ) + v$4 |0;
+:F2	$5  = $5  + v$1 + (  $6>>>6 ^  $6>>>11 ^  $6>>>25 ^  $6<<26 ^  $6<<21 ^ $6<<7 ) + ( $7^$6 & ($8^$7) ) + 0x$9 |0;
+:F2	$10 = $10 + $5 |0;
+:F2	$5  = $5 + ( ($11 & $12) ^ ($13 & ($11 ^ $12)) ) + ( $11>>>2 ^ $11>>>13 ^ $11>>>22 ^ $11<<30 ^ $11<<19 ^ $11<<10 ) |0;
+
+:ctx	let $1 = ctx[$2];
+:ctx:	ctx[$2] = ctx[$2] + $1 | 0;
+
+:var	let v$1 = buf[$1] | 0;
+
+    _trafo()
+      {
+        const ctx	= this.buf;
+        const buf	= this.in32;
+
+@	var
+@	ctx
+#	D('start',a,b,c,d,e,f,g,h,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15)
+@	F1
+#	D(a,b,c,d,e,f,g,h,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15)
+@	F2
+#	D('end',a,b,c,d,e,f,g,h,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15)
+@	ctx:
+
+        this.len	+= 64;
+      }
+
+    init()
+      {
+        this.buf	= new Uint32Array(
+          [ 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a
+          , 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+          ]);
+
+        this.fill	= 0;	// fill state of this.in
+        this.len	= 0;	// total bytes transformed into hash so far
+        return this;
+      }
+
+    end()
+      {
+        let pos		= this.fill;
+        const len	= (this.len + pos)*8;	// bytes
+        const in8	= this.in8;
+        const in32	= this.in32;
+
+        // there is at least 1 byte free in this.in8
+        in8[pos]	= 0x80;
+
+        let rest	= 64-1-pos;
+        // The last 8 byte of the block will be overwritten below
+        for (let i=rest; --i>=0; in8[++pos]=0);
+        if (this.swap) this.swap(this.in32);
+        if (rest<8)
+          {
+            this.trafo();
+            for (let i=14; --i>=0; in32[i]=0);
+          }
+        in32[14]	= len / 0x100000000 | 0;	// we cannot use integer math here
+        in32[15]	= len >>>0;
+        this.trafo();
+
+        this.fill	= void 0;
+        this.len	= void 0;
+        // this.buf contains the result
+        if (this.swap) this.swap(this.buf);
+        return this;
+      }
+
+//////////////////////
+// XXX ab hier vermutlich korrekt
+
+    update8(b)			// Uint8Array
+      {
+        const _	= this.in8;
+
+        let out	= this.fill | 0;
+        let len	= b.length | 0;	// we do not support more than 2^32 bytes (AKA 4GiB) per update
+        let pos	= 0;
+
+        while (len)
+          {
+            let max	= 64-out | 0;
+            if (max > len)
+              max	= len | 0;
+
+            // To avoid the swap() on Big endian machines, following copy
+            // should rather be replaced by some inlined Duff's device.
+            // (for this we need to add up/down-counting repeats to ./unroll.sh)
+            // (and we probably need conditional macros as well as recursive ones)
+            _.set(b.subarray(pos, pos+max), out);
+
+            pos	= pos + max | 0;
+            out	= out + max | 0;
+            len	= len - max | 0;
+            if (out<64)
+              break;
+            if (this.swap) this.swap(this.in32);
+            this.trafo();
+            out	= 0;
+          }
+        this.fill	= out;
+        return this;
+      }
+    update_str(s)		// this is not meant for long strings!
+      {
+        return this.update8(this.enc.encode(s));
+      }
+    get $bin()
+      {
+        return new Uint8Array(this.buf);
+      }
+    get $hex()
+      {
+        return Buffer.from(this.buf.buffer).toString('hex');
+      }
+    static sha256(s,bin)
+      {
+        const out = sha256.init().update_str(s).end();
+        return bin ? out.$bin : out.$hex;
+      }
+    static test(d,t)
+      {
+        const r = this.sha256(t);
+        if (r !== d)
+          throw `sha256c.js test failed for '${t}':\n'${d}' expected\n'${r}' got`;
+//        D('test ok', r);
+      }
+
+    };
+
+  const sha256 = new SHA256();	// for the static sha256 above
+
+  SHA256.test('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', '');									// 0 bytes
+  SHA256.test('72fa96f64bf2dd082aafb08cf80ed17f5b3d2c6cd527c4b138b69506f5e5c173', '0123456789abcdef0123456789abcdef0123456789abcdef0123456');		// single round
+  SHA256.test('67e4026bfbe6f1cd3f40518f324bcdf4426ae00faf5a0cddeae67a0e60ecf665', '0123456789abcdef0123456789abcdef0123456789abcdef01234567');		// double round
+  SHA256.test('a8ae6e6ee929abea3afcfc5258c8ccd6f85273e0d4626d26c7279f3250f77c8e', '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');	// 64 byte input
+//  console.log('selftest ok');
+  return SHA256;
+});
