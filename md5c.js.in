@@ -131,7 +131,6 @@
 
 # Implementation
 
-// XXX TODO XXX implement and test Big Endian
 const MD5 = (_=>_())(() => {
 
   function D(...a)
@@ -144,7 +143,7 @@ const MD5 = (_=>_())(() => {
            else if (typeof x !== 'object')
              p.push(`${Number(x|0).toString(16)}`.padStart(10,' '));
            else if (x.BYTES_PER_ELEMENT)
-	     p.push(Array.from(x).map(_ => _.toString(16).padStart(x.BYTES_PER_ELEMENT*2, '0')).join('_'));
+             p.push(Array.from(x).map(_ => _.toString(16).padStart(x.BYTES_PER_ELEMENT*2, '0')).join('_'));
         }
       console.log(p.join('  '));
     }
