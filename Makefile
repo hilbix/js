@@ -31,15 +31,15 @@ clean:
 	$(RM) $(TARG) .md5c~
 
 es6.js:	es$V.js babel.sh Makefile
-	./babel.sh '$<' >'$@.tmp'
+	./babel.sh '$<' '$@' >'$@.tmp'
 	mv '$@.tmp' '$@'
 
 er6.js:	er$V.js babel.sh Makefile
-	./babel.sh '$<' >'$@.tmp'
+	./babel.sh '$<' '$@' >'$@.tmp'
 	mv '$@.tmp' '$@'
 
 md5.js:	md5c.js babel.sh Makefile
-	./babel.sh '$<' >'$@.tmp'
+	./babel.sh '$<' '$@' >'$@.tmp'
 	mv '$@.tmp' '$@'
 
 md5c.js:	md5c.js.in unroll.sh Makefile .md5c~
