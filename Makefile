@@ -13,7 +13,7 @@
 # ES12	WeakRef: Workaround leaks memory.
 
 V=13
-TARG=sha256c.js md5c.js sha256.js md5.js er6.js es6.js
+TARG=cry/sha256c.js cry/md5c.js cry/sha256.js cry/md5.js er6.js es6.js
 
 # What happens if Babel fails?
 # This is a babel bug not a bug of this!
@@ -39,22 +39,25 @@ er6.js:	er$V.js babel.sh Makefile
 	./babel.sh '$<' '$@' >'$@.tmp'
 	mv '$@.tmp' '$@'
 
-md5.js:	md5c.js babel.sh Makefile
+cry:
+	mkdir '$@'
+
+cry/md5.js:	cry/md5c.js babel.sh Makefile
 	./babel.sh '$<' '$@' >'$@.tmp'
 	mv '$@.tmp' '$@'
 
-md5c.js:	md5c.js.in unroll.sh Makefile .md5c~
+cry/md5c.js:	md5c.js.in unroll.sh Makefile .md5c~ | cry
 	./unroll.sh '$<' >'$@.tmp'
 	mv '$@.tmp' '$@'
 
 .md5c~:
 	touch '$@'
 
-sha256.js:	sha256c.js babel.sh Makefile
+cry/sha256.js:	cry/sha256c.js babel.sh Makefile
 	./babel.sh '$<' '$@' >'$@.tmp'
 	mv '$@.tmp' '$@'
 
-sha256c.js:	sha256c.js.in unroll.sh Makefile .sha256~
+cry/sha256c.js:	sha256c.js.in unroll.sh Makefile .sha256~ | cry
 	./unroll.sh '$<' >'$@.tmp'
 	mv '$@.tmp' '$@'
 
