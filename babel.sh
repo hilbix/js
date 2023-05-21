@@ -36,7 +36,7 @@
 PRESETS=@babel/preset-env
 PLUGINS=@babel/plugin-proposal-optional-chaining,@babel/plugin-proposal-class-properties,@babel/plugin-transform-runtime
 BABEL=(babeljs --source-type=script --presets "$PRESETS" --plugins "$PLUGINS" "$1")
-SCRIPTSRC="$1"
+SCRIPTSRC="${2:-"$1"}"
 
 STDOUT() { local e=$?; [ 0 = $# ] || printf '%q' "$1"; [ 1 -lt $# ] && printf ' %q' "${@:2}"; printf '\n'; return $e; }
 STDERR() { local e=$?; STDOUT "$@" >&2; return $e; }
@@ -184,7 +184,8 @@ out // Bundled by:
 out // script $(git ls-files --full-name "$0")
 out // GIT    $(git config --get remote.origin.url)
 out // branch $(git rev-parse --abbrev-ref HEAD)
-out // SHA    $(git rev-parse HEAD)
+#out // SHA    $(git rev-parse HEAD)		# disabled. We want stable output, so use src instead
+out // src    $(sha256sum -- "$1")
 
 declare -A REQ
 o require . "$TMP"
