@@ -295,6 +295,7 @@ const MD5 = (_=>_())(() => {
     };
   const md5 = new MD5();	// for the static md5 above
 
+  MD5.test('d41d8cd98f00b204e9800998ecf8427e', '');									// 0 bytes
   MD5.test('d8ea71eb4d2af27f59a5316c971065e6', '0123456789abcdef0123456789abcdef0123456789abcdef0123456');		// single round
   MD5.test('a68f061e81239660f6305195739ba7f0', '0123456789abcdef0123456789abcdef0123456789abcdef01234567');		// double round
   MD5.test('fe3a1ff59f3b89b2ad3d33f08984874b', '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');	// 64 byte input
