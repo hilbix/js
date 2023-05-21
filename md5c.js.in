@@ -2,6 +2,7 @@
 # (You can BABEL and Polyfills of course.  See generated md5.js)
 #
 # This code is parsed through ./runroll.sh to output the real JS.
+# It runs on Big endian, too, but is a bit slower due to swap.
 #
 # vim: ft=javascript :
 #
@@ -113,8 +114,12 @@
 :ctx	echo "let $1 = ctx[$2];"
 :ctx:	echo "ctx[$2] = $1 + ctx[$2] | 0;"
 
-:F1	echo "$1 += ( ( ($2 & $3) | (~$2 & $4) ) + buf[$5] + 0x$6 )|0;"
+#:F1	echo "console.log($1,$2,$3,$4,buf[$5],0x$6);"
+#:F2	echo "console.log($1,$2,$3,$4,buf[$5],0x$6);"
+#:F3	echo "console.log($1,$2,$3,$4,buf[$5],0x$6);"
+#:F4	echo "console.log($1,$2,$3,$4,buf[$5],0x$6);"
 
+:F1	echo "$1 += ( ( ($2 & $3) | (~$2 & $4) ) + buf[$5] + 0x$6 )|0;"
 :F2	echo "$1 += ( ( ($2 & $4) | ($3 & ~$4) ) + buf[$5] + 0x$6 )|0;"
 :F3	echo "$1 += (   ($2 ^ $3 ^ $4)           + buf[$5] + 0x$6 )|0;"
 :F4	echo "$1 += (   ($3 ^ ($2 | (~$4)))      + buf[$5] + 0x$6 )|0;"
@@ -136,31 +141,25 @@ const MD5 = (_=>_())(() => {
         {
            if ('string' === typeof x)
              p.push(x);
-           else if (typeof x === 'object')
-             p.push(Buffer.from(x).toString('hex'));
-           else
+           else if (typeof x !== 'object')
              p.push(`${Number(x|0).toString(16)}`.padStart(10,' '));
+           else if (x.BYTES_PER_ELEMENT)
+	     p.push(Array.from(x).map(_ => _.toString(16).padStart(x.BYTES_PER_ELEMENT*2, '0')).join('_'));
         }
       console.log(p.join('  '));
     }
 
-  const test = () =>
-    {
-      const b	= new ArrayBuffer(4);
-      const a	= new Uint8Array(b);
-      const i	= new Uint32Array(b);
-
-      i[0]	= 0x12345678;
-      if (a[0] != 0x78 || a[1] != 0x56 || a[2] != 0x34 || a[3] != 0x12)
-        throw `md5c.js needs Little Endian!\n'78563412' wanted\n'${Buffer.from(a.buffer).toString('hex')}' got`;
-    }
-
   class MD5
     {
+    big_endian()
+      {
+        const b	= new ArrayBuffer(4);
+
+        new Uint32Array(b)[0]	= 0x12345678;
+        return new Uint8Array(b)[0] === 0x12;
+      }
     constructor()
       {
-        test();
-
         // input array
         const b		= new ArrayBuffer(64);		// must be a multiple of 32 bit
         this.in8	= new Uint8Array(b);
@@ -169,13 +168,27 @@ const MD5 = (_=>_())(() => {
 
         // encoder
         this.enc	= new TextEncoder();
+
+        this.trafo	= this._trafo;
+        if (this.big_endian())
+          this.swap	= this._swap;
       }
-    _transform()
+    _swap(a32)
+      {
+        for (let i = a32.length; --i>=0; )
+          {
+            let x	= a32[i];
+            x = ((x>> 8) & 0x00ff00ff) | ((x<< 8) & 0xff00ff00);
+            x = ((x>>16) & 0x0000ffff) | ((x<<16) & 0xffff0000);
+            a32[i]	= x;
+          }
+      }
+    _trafo()
       {
         const ctx	= this.buf;
         const buf	= this.in32;
 
-//        D(buf.buffer, ctx.buffer);
+//        D(buf, ctx);
 
 @       ctx
 @       F1
@@ -186,6 +199,7 @@ const MD5 = (_=>_())(() => {
 
         this.len	+= 64;
       }
+
     init()
       {
         this.buf	= new Uint32Array([0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]);
@@ -198,29 +212,29 @@ const MD5 = (_=>_())(() => {
       {
         let pos		= this.fill;
         const len	= (this.len + pos) * 8;	// we count bits
+        const in8	= this.in8;
+        const in32	= this.in32;
 
         // there is at least 1 byte free in this.in8
-        this.in8[pos]	= 0x80;
+        in8[pos]	= 0x80;
 
         let rest	= 64-1-pos;
         // The last 8 byte of the block will be overwritten below
+        for (let i=rest; --i>=0; in8[++pos]=0);
+        if (this.swap) this.swap(this.in32);
         if (rest<8)
           {
-            for (; --rest>=0; this.in8[++pos]=0);
-            this._transform();
-            for (rest=14; --rest>=0; this.in16[rest]=0);
+            this.trafo();
+            for (let i=14; --i>=0; in32[i]=0);
           }
-        else
-          {
-            for (; --rest>=8; this.in8[++pos]=0);
-          }
-        this.in32[15]	= len / 0x100000000 | 0;
-        this.in32[14]	= len % 0x100000000 | 0;
-        this._transform();
+        in32[15]	= len / 0x100000000 | 0;
+        in32[14]	= len % 0x100000000 | 0;
+        this.trafo();
 
         this.fill	= void 0;
         this.len	= void 0;
         // this.buf contains the result
+        if (this.swap) this.swap(this.buf);
         return this;
       }
     update8(b)			// Uint8Array
@@ -240,7 +254,8 @@ const MD5 = (_=>_())(() => {
             for (len-=max; --max>=0; _[out++] = b[pos++]);	// copy some data
             if (out<64)
               break;
-            this._transform();
+            if (this.swap) this.swap(this.in32);
+            this.trafo();
             out	= 0;
           }
         this.fill	= out;
@@ -263,17 +278,19 @@ const MD5 = (_=>_())(() => {
         const out = md5.init().update_str(s).end();
         return bin ? out.$bin : out.$hex;
       }
-    static test(k,v)
+    static test(d,t)
       {
-        const r = this.md5(k);
-        if (r !== v)
-          throw `md5c.js test failed for '${k}':\n'${v}' expected\n'${r}' got`;
+        const r = this.md5(t);
+        if (r !== d)
+          throw `md5c.js test failed for '${t}':\n'${d}' expected\n'${r}' got`;
+//        D('test ok', r);
       }
     };
   const md5 = new MD5();	// for the static md5 above
 
-  MD5.test('hello', '5d41402abc4b2a76b9719d911017c592');
-  MD5.test('test', '098f6bcd4621d373cade4e832627b4f6');
+  MD5.test('d8ea71eb4d2af27f59a5316c971065e6', '0123456789abcdef0123456789abcdef0123456789abcdef0123456');		// single round
+  MD5.test('a68f061e81239660f6305195739ba7f0', '0123456789abcdef0123456789abcdef0123456789abcdef01234567');		// double round
+  MD5.test('fe3a1ff59f3b89b2ad3d33f08984874b', '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef');	// 64 byte input
 //  console.log('selftest ok');
 
   return MD5;
