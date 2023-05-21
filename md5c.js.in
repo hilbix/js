@@ -1,14 +1,14 @@
 # !! THIS CODE IS NOT MEANT TO BE KEPT COMPATIBLE TO ES12 OR BELOW !!
 # (You can BABEL and Polyfills of course.  See generated md5.js)
 #
-# This code is parsed through ./runroll.sh to output the real JS.
+# This code is parsed through ./unroll.sh to output the real JS.
 # It runs on Big endian, too, but is a bit slower due to swap.
 #
 # vim: ft=javascript :
 #
-# I needed small and fast code which must not carry any Copyright
-# which runs in non-HTTPS-context, too.
-# Hence this code here is free as in free beer, free speech and free baby.
+# I need small and fast code, which must not carry any Copyright,
+# and which runs in non-HTTPS-context, too.
+# Hence this here is free as in free beer, free speech and free baby.
 #
 # Based on https://github.com/hilbix/tinolib/blob/master/md5.h
 # (which was based on the MD5 reference code)
