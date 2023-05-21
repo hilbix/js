@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Test Big endian, too.
+#
+# s390x is a VM running with qemu-system-s390x at my side
+#
+# Example usage:
+# ./.s390x; inotify-hookable -f md5c.js.in -f unroll.sh -c ./.s390x
+
+rm A B
+touch A B
+make md5c.js && js md5c.js > A && scp md5c.js s390x: && ssh s390x js md5c.js > B
+diff -y --color=always A B
+
