@@ -1,0 +1,281 @@
+# !! THIS CODE IS NOT MEANT TO BE KEPT COMPATIBLE TO ES12 OR BELOW !!
+# (You can BABEL and Polyfills of course.  See generated md5.js)
+#
+# This code is parsed through ./runroll.sh to output the real JS.
+#
+# vim: ft=javascript :
+#
+# I needed small and fast code which must not carry any Copyright
+# which runs in non-HTTPS-context, too.
+# Hence this code here is free as in free beer, free speech and free baby.
+#
+# Based on https://github.com/hilbix/tinolib/blob/master/md5.h
+# (which was based on the MD5 reference code)
+# and then adapted to use names of other sources like:
+# - http://www.myersdaily.org/joseph/javascript/md5.js
+# - https://github.com/gorhill/yamd5.js/blob/master/yamd5.js
+
+'use strict';
+// This is free as in free beer, free speech and free baby.
+// IMPORTANT!  NEVER COVER THIS CODE WITH A COPYRIGHT
+// as this would break German Urheberrecht!
+// If you need to state a Copyright, excempt this code from it!
+//
+// How to use?
+//	<script src="md5.js"></script>
+// then
+//	const md5 = MD5.md5('string');
+// or
+//	const md5 = new MD5();
+//	const a = md5.init().update_str('str1').update_str('str2').end().$hex;
+//	const b = md5.init().update8(new UInt8Array(something))   .end().$bin;
+// This can be repeated:    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# Tables
+
+!ctx	a 0
+!ctx	b 1
+!ctx	c 2
+!ctx	d 3
+
+#	1 2 3 4  5        6  7
+
+!F1	a b c d  0 d76aa478  7
+!F1	d a b c  1 e8c7b756 12
+!F1	c d a b  2 242070db 17
+!F1	b c d a  3 c1bdceee 22
+!F1	a b c d  4 f57c0faf  7
+!F1	d a b c  5 4787c62a 12
+!F1	c d a b  6 a8304613 17
+!F1	b c d a  7 fd469501 22
+!F1	a b c d  8 698098d8  7
+!F1	d a b c  9 8b44f7af 12
+!F1	c d a b 10 ffff5bb1 17
+!F1	b c d a 11 895cd7be 22
+!F1	a b c d 12 6b901122  7
+!F1	d a b c 13 fd987193 12
+!F1	c d a b 14 a679438e 17
+!F1	b c d a 15 49b40821 22
+
+!F2	a b c d  1 f61e2562  5
+!F2	d a b c  6 c040b340  9
+!F2	c d a b 11 265e5a51 14
+!F2	b c d a  0 e9b6c7aa 20
+!F2	a b c d  5 d62f105d  5
+!F2	d a b c 10 02441453  9
+!F2	c d a b 15 d8a1e681 14
+!F2	b c d a  4 e7d3fbc8 20
+!F2	a b c d  9 21e1cde6  5
+!F2	d a b c 14 c33707d6  9
+!F2	c d a b  3 f4d50d87 14
+!F2	b c d a  8 455a14ed 20
+!F2	a b c d 13 a9e3e905  5
+!F2	d a b c  2 fcefa3f8  9
+!F2	c d a b  7 676f02d9 14
+!F2	b c d a 12 8d2a4c8a 20
+
+!F3	a b c d  5 fffa3942  4
+!F3	d a b c  8 8771f681 11
+!F3	c d a b 11 6d9d6122 16
+!F3	b c d a 14 fde5380c 23
+!F3	a b c d  1 a4beea44  4
+!F3	d a b c  4 4bdecfa9 11
+!F3	c d a b  7 f6bb4b60 16
+!F3	b c d a 10 bebfbc70 23
+!F3	a b c d 13 289b7ec6  4
+!F3	d a b c  0 eaa127fa 11
+!F3	c d a b  3 d4ef3085 16
+!F3	b c d a  6 04881d05 23
+!F3	a b c d  9 d9d4d039  4
+!F3	d a b c 12 e6db99e5 11
+!F3	c d a b 15 1fa27cf8 16
+!F3	b c d a  2 c4ac5665 23
+
+!F4	a b c d  0 f4292244  6
+!F4	d a b c  7 432aff97 10
+!F4	c d a b 14 ab9423a7 15
+!F4	b c d a  5 fc93a039 21
+!F4	a b c d 12 655b59c3  6
+!F4	d a b c  3 8f0ccc92 10
+!F4	c d a b 10 ffeff47d 15
+!F4	b c d a  1 85845dd1 21
+!F4	a b c d  8 6fa87e4f  6
+!F4	d a b c 15 fe2ce6e0 10
+!F4	c d a b  6 a3014314 15
+!F4	b c d a 13 4e0811a1 21
+!F4	a b c d  4 f7537e82  6
+!F4	d a b c 11 bd3af235 10
+!F4	c d a b  2 2ad7d2bb 15
+!F4	b c d a  9 eb86d391 21
+
+# Macros
+
+:ctx	echo "let $1 = ctx[$2];"
+:ctx:	echo "ctx[$2] = $1 + ctx[$2] | 0;"
+
+:F1	echo "$1 += ( ( ($2 & $3) | (~$2 & $4) ) + buf[$5] + 0x$6 )|0;"
+
+:F2	echo "$1 += ( ( ($2 & $4) | ($3 & ~$4) ) + buf[$5] + 0x$6 )|0;"
+:F3	echo "$1 += (   ($2 ^ $3 ^ $4)           + buf[$5] + 0x$6 )|0;"
+:F4	echo "$1 += (   ($3 ^ ($2 | (~$4)))      + buf[$5] + 0x$6 )|0;"
+
+:F1	echo "$1  = ( ( ($1 << $7) | (($1|0) >>> $[32-$7]) ) + $2 )|0;"
+:F2	echo "$1  = ( ( ($1 << $7) | (($1|0) >>> $[32-$7]) ) + $2 )|0;"
+:F3	echo "$1  = ( ( ($1 << $7) | (($1|0) >>> $[32-$7]) ) + $2 )|0;"
+:F4	echo "$1  = ( ( ($1 << $7) | (($1|0) >>> $[32-$7]) ) + $2 )|0;"
+
+# Implementation
+
+// XXX TODO XXX implement and test Big Endian
+const MD5 = (_=>_())(() => {
+
+  function D(...a)
+    {
+      const p = [];
+      for (const x of a)
+        {
+           if ('string' === typeof x)
+             p.push(x);
+           else if (typeof x === 'object')
+             p.push(Buffer.from(x).toString('hex'));
+           else
+             p.push(`${Number(x|0).toString(16)}`.padStart(10,' '));
+        }
+      console.log(p.join('  '));
+    }
+
+  const test = () =>
+    {
+      const b	= new ArrayBuffer(4);
+      const a	= new Uint8Array(b);
+      const i	= new Uint32Array(b);
+
+      i[0]	= 0x12345678;
+      if (a[0] != 0x78 || a[1] != 0x56 || a[2] != 0x34 || a[3] != 0x12)
+        throw `md5c.js needs Little Endian!\n'78563412' wanted\n'${Buffer.from(a.buffer).toString('hex')}' got`;
+    }
+
+  class MD5
+    {
+    constructor()
+      {
+        test();
+
+        // input array
+        const b		= new ArrayBuffer(64);		// must be a multiple of 32 bit
+        this.in8	= new Uint8Array(b);
+        // https://hacks.mozilla.org/2017/01/typedarray-or-dataview-understanding-byte-order/
+        this.in32	= new Uint32Array(b);
+
+        // encoder
+        this.enc	= new TextEncoder();
+      }
+    _transform()
+      {
+        const ctx	= this.buf;
+        const buf	= this.in32;
+
+//        D(buf.buffer, ctx.buffer);
+
+@       ctx
+@       F1
+@       F2
+@       F3
+@       F4
+@       ctx:
+
+        this.len	+= 64;
+      }
+    init()
+      {
+        this.buf	= new Uint32Array([0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]);
+
+        this.fill	= 0;	// fill state of this.in
+        this.len	= 0;	// total bytes transformed into hash so far
+        return this;
+      }
+    end()
+      {
+        let pos		= this.fill;
+        const len	= (this.len + pos) * 8;	// we count bits
+
+        // there is at least 1 byte free in this.in8
+        this.in8[pos]	= 0x80;
+
+        let rest	= 64-1-pos;
+        // The last 8 byte of the block will be overwritten below
+        if (rest<8)
+          {
+            for (; --rest>=0; this.in8[++pos]=0);
+            this._transform();
+            for (rest=14; --rest>=0; this.in16[rest]=0);
+          }
+        else
+          {
+            for (; --rest>=8; this.in8[++pos]=0);
+          }
+        this.in32[15]	= len / 0x100000000 | 0;
+        this.in32[14]	= len % 0x100000000 | 0;
+        this._transform();
+
+        this.fill	= void 0;
+        this.len	= void 0;
+        // this.buf contains the result
+        return this;
+      }
+    update8(b)			// Uint8Array
+      {
+        const _	= this.in8;
+
+        let out	= this.fill;
+        let len	= b.length;
+        let pos	= 0;
+
+        while (len)
+          {
+            let max	= 64-out;
+            if (max > len)
+              max	= len;
+
+            for (len-=max; --max>=0; _[out++] = b[pos++]);	// copy some data
+            if (out<64)
+              break;
+            this._transform();
+            out	= 0;
+          }
+        this.fill	= out;
+        return this;
+      }
+    update_str(s)		// this is not meant for long strings!
+      {
+        return this.update8(this.enc.encode(s));
+      }
+    get $bin()
+      {
+        return new Uint8Array(this.buf);
+      }
+    get $hex()
+      {
+        return Buffer.from(this.buf.buffer).toString('hex');
+      }
+    static md5(s,bin)
+      {
+        const out = md5.init().update_str(s).end();
+        return bin ? out.$bin : out.$hex;
+      }
+    static test(k,v)
+      {
+        const r = this.md5(k);
+        if (r !== v)
+          throw `md5c.js test failed for '${k}':\n'${v}' expected\n'${r}' got`;
+      }
+    };
+  const md5 = new MD5();	// for the static md5 above
+
+  MD5.test('hello', '5d41402abc4b2a76b9719d911017c592');
+  MD5.test('test', '098f6bcd4621d373cade4e832627b4f6');
+//  console.log('selftest ok');
+
+  return MD5;
+});
+
