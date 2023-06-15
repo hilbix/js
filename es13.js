@@ -2171,10 +2171,10 @@ class Keeper
     }
   }
 
-// Cookie('name')			=> SESSION COOKIE
-// Cookie({name:'name', expire:-2})	=> 2 year cookie
-// Cookie({name:'name', expire:3600})	=> 1 hour cookie
-// But: UrlState-Cookie defaults to 1 year!
+// new Cookie('name')				=> SESSION COOKIE
+// new Cookie({name:'name', expire:-2})		=> 2 year cookie
+// new Cookie({name:'name', expire:3600})	=> 1 hour cookie
+// UrlState().buttons()-Cookie defaults to 1 year!
 //
 // Cookie({name, path, samesite, secure, httponly, domain, expire})
 // .$	= value;	// to set
@@ -2443,12 +2443,14 @@ const UrlState = (x => x())(function(){
     }
   function buttons(name, el, set, del, expire)
     {
+      // UrlState.buttons() -> this points to UrlState === run
+      // so you can wrap it to change the functions
       if (expire === void 0) expire = -1;
       name	= name || 'state';
       el	= E(el || name);
-      const c	= el.BUTTON.text(set || 'set').on('click', _ => UrlState.set());
-      const d	= el.BUTTON.text(del || 'del').on('click', _ => UrlState.del());
-      run.COOKIE({name, expire}).on(a => { d.disabled(!a); c.$class = { green8:!!a, red8:!a }; d.$class = { grey8:!a } }).trigger();
+      const c	= el.BUTTON.text(set || 'set').on('click', _ => this.set());
+      const d	= el.BUTTON.text(del || 'del').on('click', _ => this.del());
+      this.COOKIE({name, expire}).on(a => { d.disabled(!a); c.$class = { green8:!!a, red8:!a }; d.$class = { grey8:!a } }).trigger();
       return this;
     }
 
