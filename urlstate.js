@@ -102,7 +102,7 @@
 // <input radio>	-> the checked one
 // <input check>	-> the check state
 
-(_=>_())(()=>{
+Object.entries((()=>{
 
 function getset(_)
 {
@@ -132,12 +132,12 @@ function getset(_)
   return { get:() => _.value, set:v => _.value=v };
 }
 
-// UrlState.add() ...
-if (!UrlState.add)
-  UrlState.ADD = function(e,id)
+const known = new Set();
+
+return (
+  { ADD(e,id)
     {
       e = E(e);		// That's wrong.  It should be a live list of elements in the DOM.  I need another idiom for this.
-//      console.log('UrlState.ADD',e.$all,id);
       if (!id)
         id	= e.$.id || e.$.name;
       if (!id)
@@ -147,8 +147,38 @@ if (!UrlState.add)
         }
       const st = UrlState(id);
 
-      e.ON('change', _ => { st.state = getset(_.target).get() });
+//      console.log('UrlState.ADD',id,e.$all,st);
+      if (!known.has(e))
+        e.ON('change', _ => { st.state = getset(_.target).get() });
+      known.add(e);
       return st;
+    }
+
+// add or update some elements on the list
+  , update(...a) { this.Update(...a); return this }
+  , Update(_,pfx,ds)
+    {
+      pfx = pfx ? `${pfx}-` : '';	// falsey pfx gives empty string, sorry
+      for (const e of E(_))
+        {
+          const v = (ds && e.dataset[ds]) || e.id || e.name;
+
+          if (!v)
+            {
+              console.error('UrlState: ignoring', e, '(has no id nor name)');
+              continue;
+            }
+
+          // For those where the chosen ID === .name select all the elements
+          // (needed for <input radio>)
+          const _ = v === e.name ? E.NAME(v) : E(e);
+
+          const st = this.ADD(_, `${pfx}${v}`).state;
+          if (st !== void 0)
+            for (const x of _)
+              getset(x).set(st);
+        }
+      return _;
     }
 
 // UrlState.auto(optionaldatasetname, optionalprefix)
@@ -158,31 +188,13 @@ if (!UrlState.add)
 // optionalprefix defaults to
 //	optionaldatasetname
 // giving a prefix of optionaldatasetname- or nothing if optionaldatasetname is not set
-if (!UrlState.auto)
-  UrlState.auto = function(name, prefix)
+  , auto(name, prefix)
     {
-//      console.log('UrlState.auto',name,prefix);
+//      console.log('UrlState.auto', name, prefix);
       const ds	= name || 'urlstate';
-      const tmp	= prefix || name;
-      const pfx	= tmp ? `${tmp}-` : '';
-      for (const e of E.ALL(`[data-${ds}]`))
-        {
-          const v = e.dataset[ds] || e.id || e.name;
-          if (!v)
-            {
-              console.error('UrlState: ignoring', e, '(has no id nor name)');
-              continue;
-            }
-          // For those where the chosen ID === .name select all the elements
-          // (needed for <input radio>)
-          const _ = v === e.name ? E.NAME(v) : E(e);
-          const st = UrlState.ADD(_, `${pfx}${v}`).state;
-          if (st !== void 0)
-            for (const x of _)
-              getset(x).set(st);
-        }
-      return this;
+      return this.Update(E.ALL(`[data-${ds}]`), prefix||name, ds);
     }
+  });
 
-});
+})()).forEach(([k,v]) => UrlState[k] || (UrlState[k]=v));	// extend UrlState if not already done
 
