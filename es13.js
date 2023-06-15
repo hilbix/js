@@ -2088,7 +2088,7 @@ class OnOff
   };
 
 //
-// easy global state keeping
+// easy global state keeping, see also urlstate.js
 //
 // st	= UrlState('id', def);	// location.hash keeps #id:val# where val is JSON
 // console.log(st.state)	// get current value
