@@ -1215,6 +1215,7 @@ class Callable extends Function
 class _E0 extends Callable
   {
   __e; __E = []; __d		// when renaming __E, do not miss reference in definition of 'const E' below!
+  CATCH = CATCH		// trick to set this on call
 
   constructor(e)	{ super(); this.__e = (this.__E = e ? mkArr(e) : [])[0] || FRAGMENT() }
   get $()		{ return this.__e; }
@@ -1613,6 +1614,35 @@ class _E extends _E0
   sup(...a)		{ this.SUP.text(...a); return this }
   tt(...a)		{ this.TT.text(...a); return this }
   code(...a)		{ this.CODE.text(...a); return this }
+  // generic click() function:  call of fn DIFFERS FROM .on('click', fn, args..)!
+  // e.click(fn, args..)	// calls fn(args.., event, e, on-instance) with this bound to e
+  // click('mod', fn, args..)	// calls mod(true), fn(), mod(false)
+  // click('mod', null, args..)	// calls mod(true), mod(false) -- do not use
+  // click('mod', args..)	// calls special mod
+  click(...a)		{ this.CLICK(...a); return this }
+  CLICK(...a)
+    {
+      const mod	= ModFn.get(a[0]);
+      if (mod)
+        a.shift();
+      const fn	= a.shift();
+      const on	= new ON('click');
+      on.add(async _ =>
+        {
+          try {
+            // mod(true) might augment the fn
+            const x = mod && await this.CATCH(mod,true,fn,a,_,on);
+            const y = x && x !== this ? x : fn;	// hack: allow to use class methods which return "this"
+            // call the fn (it can be returned by a promise)
+            await this.CATCH(await y,...a,_,on);
+          } finally {
+            // mod(false)
+            mod && await this.CATCH(mod,false,fn,a,_,on)
+          }
+        });
+      return on.attach(this);
+    }
+  button(text,...a)	{ this.BUTTON.text(text).CLICK(...a); return this }
 
   get $options()	{ return (function *() { for (const a of this.$.selectedOptions) yield E(a) }).call(this) }
   get $option()		{ return E(this.$?.selectedOptions[0]) }
@@ -1691,7 +1721,7 @@ const E = (function(){
 
   Object.defineProperty(fn, '__E', { value:[] });		// XXX TODO XXX does this work for .#E as well?
 
-  // This is not perfect, as it copies functions,
+  // This is not perfect, as it also copies functions,
   // which do not work.  But we ignore this for now.
   for (let klass=_E; klass?.prototype; klass = Object.getPrototypeOf(klass))
     Object.entries(Object.getOwnPropertyDescriptors(klass.prototype)).forEach(_ =>
@@ -1733,6 +1763,14 @@ const E = (function(){
       return w;
     }
 })();
+
+// must come after E
+const ModFn = new Map(
+  [[false,	E.disabled]	// .click(false, fn) => disable button until function finishes
+  ,[true,	E.checked]	// .click(true, fn)  => check checkbox until function finishes
+// add more standard mod functions here if they suit fit with
+// ModFn.set('key', fn)
+  ]);
 
 // Create a TEXT node
 const TT = _ => E(_ instanceof _E0 || _ instanceof Node ? _ : document.createTextNode(`${_}`));
