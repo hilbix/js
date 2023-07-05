@@ -1,0 +1,7 @@
+/* example for loadmain.js */
+
+body,html		{ background:#000; color:#fff }
+
+#err			{ position:fixed; right:0; top:0; background-color:#f00; color:#fff; opacity:0.5 }
+#err:hover		{ opacity:1; transform-origin:top right; transform:scale(5); z-index:999 }
+
