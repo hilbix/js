@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#js ./ref.js > A.ref
+#js ./sha256c.js > B.me
+#
+#diff --width 35 -y A.ref B.me | less
+
+node2vim.sh js cry/sha256c.js
+node2vim.sh js cry/md5c.js
+

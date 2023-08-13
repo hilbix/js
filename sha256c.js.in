@@ -300,11 +300,11 @@ const SHA256 = (_=>_())(() => {
       }
     get $bin()
       {
-        return new Uint8Array(this.buf);
+        return new Uint8Array(this.buf.buffer);
       }
     get $hex()
       {
-        return Buffer.from(this.buf.buffer).toString('hex');
+	return Array.from(this.$bin, b => b.toString(16).padStart(2, '0')).join('');
       }
     static sha256(s,bin)
       {
