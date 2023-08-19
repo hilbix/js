@@ -36,7 +36,7 @@
 
 const _ = E('main').clr().text('initializing');
 try {
-  const { default:modules } = await import('./loadmodule')
+  const { default:modules } = await import('./loadmodule.js')
   console.log(_.$text = 'loading');
   const main = await modules.main;
   console.log(_.$text = 'loaded');
