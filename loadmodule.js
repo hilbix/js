@@ -172,7 +172,7 @@ function load(m)
     (fins[fin] || (fins[fin] = [])).push(base);
 
   const base	= m[0][0];
-  const name	= m[1]['as'] || base;
+  const name	= m[1]['as'] || (base.endsWith('.js') ? base.substring(0,base.length-3) : base);
   const detail	= {base,name};
   const trig	= type => mkev(m[1][type], detail);
 
