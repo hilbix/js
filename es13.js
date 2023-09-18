@@ -1634,7 +1634,7 @@ class _E extends _E0
             const x = mod && await this.CATCH(mod,true,fn,a,_,on);
             const y = x && x !== this ? x : fn;	// hack: allow to use class methods which return "this"
             // call the fn (it can be returned by a promise)
-            await this.CATCH(await y,...a,_,on);
+            await this.CATCH(await y,...a,_,this,on);
           } finally {
             // mod(false)
             mod && await this.CATCH(mod,false,fn,a,_,on)
