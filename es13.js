@@ -1527,8 +1527,8 @@ class _E extends _E0
   // So the 2nd next thing is to use 'nowrap', which needs to do line separation myself in case it is multi-line.
   // However this is better than 'pre', which always collapses the spaces myself when single-line.
   ws(x)			{ return this.style({ whiteSpace:x }) }
-  nobr()		{ return this.ws('nowrap') }
-  pre()			{ return this.ws('pre') }
+  nobr(...a)		{ return this.ws('nowrap').text(...a) }
+  pre(...a)		{ return a.length ? ( this.PRE.text(...a), this ) : this.ws('pre') }
 
   // All TAGs (lowercase: includes .$$)
   get DIV()		{ return this._MK('div') }
