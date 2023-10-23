@@ -1229,7 +1229,6 @@ class _E0 extends Callable
   RM(...a)		{ const x = this.CHAIN(...a); for (const e of this.__E) e.remove(); return x }
   rm(...a)		{ this.RM(...a); return this }
   remove()		{ return this.rm() }
-  clr()			{ let a; for (const e of this.__E) while (a = e.firstChild) a.remove(); return this }
 
   // Note that the handler must return truish to stop the handling of the event.
   // This is not only kind opposite of what DOM did, it also stops handling of all other event handlers added to the ON class.
@@ -1394,6 +1393,7 @@ class _E extends _E0
   constructor(e)	{ super(e); this.__cache = {} }
 
   get $$()		{ return E(this.$?.parentNode); }
+  clr()			{ let a; for (const e of this.__E) while (a = e.firstChild) a.remove(); return this }
 
   // E().ALL(selector) queries on the document
   // but: E().clr() does NOT clear the document!
@@ -1462,6 +1462,8 @@ class _E extends _E0
   set $text(s)		{ return this.$.textContent = s }	// innerText has bad siedeffects on IE<=11			// XXX TODO XXX $all!
   get $align()		{ return this.$.align }
   set $align(a)		{ this.$.align = a }			// XXX TODO XXX $all!
+  get $id()		{ return this.$.id }
+  set $id(id)		{ this.$.id = id }
   get $value()		{ return this.$.value }
   set $value(v)		{ this.$.value = v }			// XXX TODO XXX $all!
   get $src()		{ return this.$.src }
@@ -1487,6 +1489,8 @@ class _E extends _E0
   // .selectionEnd may change if .selectionStart is modified
   cursormove(delta)	{ const $ = this.$; const a = $.selectionStart; const b = $.selectionEnd; $.selectionStart = a+delta; $.selectionEnd = b+delta; return this }		// XXX TODO XXX $all
   editval(s)		{ return this.selection(s).cursormove(s.length) }
+
+  Dataset(d)		{ const a=this.__E.map(_ => _?.dataset[d]).filter(_ => _); return a.length<2 ? a[0] : a }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(X(e)).attr(attr) }
