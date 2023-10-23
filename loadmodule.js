@@ -122,7 +122,8 @@
 // I really have no idea what happens if import.meta isn't supported,
 // as I did not find a way to test that.  Sorry.
 // https://stackoverflow.com/a/76493355/490291
-const me = import.meta.url?.split('/').pop() || 'loadmodule.js';
+const remove_js = s => s.endsWith('.js') ? s.substring(0,s.length-3) : s;
+const me = remove_js(import.meta.url?.split('/').pop() || 'loadmodule');
 const metas = Array
   .from(document.getElementsByName(me))
   .filter(_ => _.nodeName === 'META')
@@ -172,7 +173,7 @@ function load(m)
     (fins[fin] || (fins[fin] = [])).push(base);
 
   const base	= m[0][0];
-  const name	= m[1]['as'] || (base.endsWith('.js') ? base.substring(0,base.length-3) : base);
+  const name	= m[1]['as'] || remove_js(base);
   const detail	= {base,name};
   const trig	= type => mkev(m[1][type], detail);
 
