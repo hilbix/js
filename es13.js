@@ -1490,7 +1490,7 @@ class _E extends _E0
   cursormove(delta)	{ const $ = this.$; const a = $.selectionStart; const b = $.selectionEnd; $.selectionStart = a+delta; $.selectionEnd = b+delta; return this }		// XXX TODO XXX $all
   editval(s)		{ return this.selection(s).cursormove(s.length) }
 
-  Dataset(d)		{ const a=this.__E.map(_ => _?.dataset[d]).filter(_ => _); return a.length<2 ? a[0] : a }
+  Dataset(d)		{ const a=this.__E.map(_ => _.dataset?.[d]).filter(_ => _); return a.length<2 ? a[0] : a }
 
   _ADD(e)		{ e = E(e); this.add(e); return e }
   _MK(e,attr)		{ return this._ADD(X(e)).attr(attr) }
