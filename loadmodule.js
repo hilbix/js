@@ -197,7 +197,7 @@ function load(m)
 
         } catch(_) {
 
-          console.error(me, 'loading', url, 'failed:', _);
+          console.error(me, `loading ${url} failed:`, _, `\n${_.fileName}:${_.lineNumber}:${_.columnNumber}`);
           detail.error	= _;
           trig('fail');
 
