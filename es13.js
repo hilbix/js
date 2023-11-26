@@ -1608,10 +1608,18 @@ class _E extends _E0
   get RP()		{ return this._MK('rp') }
   get RT()		{ return this._MK('rt') }
 
-  a(url,text,target)	{ this.A.href(url).text(text).if$(target, this.target, target); return this }
+  // a(url,text)		normal link
+  // a(url,text,true)		_blank link
+  // a(url,text,false)		_blank link with noreferrer and noopener
+  // a(url,text,'target')	targeted link with noreferrer and noopener
+  // a(url,text,[target],false)	possibly targeted link with noreferrer and noopener
+  // a(url,text,[target],true)	possibly targeted link (with referrer and opener)
+  // a(url,text,[target],"rel")	possibly targeted link with given rel
+  a(url,text,trg,rel)	{ this.A.href(url).text(text).if$(trg!==void 0, this.target, trg).if$(trg!==void 0||rel!==void 0, this.rel, rel!==void 0 ? rel : trg===true); return this }
   img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }	// .img(url, function(args..) { this === E.IMG.src(src) }, args..)
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
+  li(...a)		{ for (const t of a) this.LI.text(t); return this }
   b(...a)		{ this.B.text(...a); return this }
   u(...a)		{ this.U.text(...a); return this }
   sub(...a)		{ this.SUB.text(...a); return this }
@@ -1659,7 +1667,8 @@ class _E extends _E0
   update(...a)		{ this.UPDATE(...a); return this }
   UPD(...a)		{ return _ => { this.UPDATE(...a, _); return _ } }	// Promise.resolve(1).then(el.UPD()).then(_ => _===1)
 
-  target(id)		{ return this.attr({target:(id === void 0 ? '_blank' : id)}) }
+  target(id)		{ return this.attr({target:(id === void 0 || id === true || id === false ? '_blank' : id)}) }
+  rel(rel)		{ return rel === true ? this : this.attr({rel:(rel === void 0 || rel === false ? 'noreferrer noopener' : rel)}) }
   href(href)		{ return this.attr({href}) }
   id(id)		{ return this.attr({id}) }
   name(name)		{ return this.attr({name}) }
