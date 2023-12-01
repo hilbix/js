@@ -743,8 +743,8 @@ const Semaphore = (max, fn, ...args) =>
       {
         let _;
         if (n === void 0) n	= waits.length;
-        for (n = n|0; n<0 && (_ = waits.pop())  ; _++) _[1](c || _[2]);
-        for (       ; n>0 && (_ = waits.shift()); _--) _[1](c || _[2]);
+        for (n = n|0; n<0 && (_ = waits.pop())  ; n++) _[1](msg || _[2]);	// fail promise with msg
+        for (       ; n>0 && (_ = waits.shift()); n--) _[1](msg || _[2]);	// _[1] is ko callback
         if (waiting) waiting.ko(msg);		// we cannot cancel N here, just all which wait for .Aquire()
         return ret;
       }
@@ -880,7 +880,7 @@ const Semaphore = (max, fn, ...args) =>
 
     let discipline = 'push';
 
-    const ret = (..._) => next(new Promise((ok,ko) => waits[discipline]([ok,ko,_])).then(() => (ret.fn ? ret.fn : (...a)=>a)(...ret.args,..._)).finally(() => next(upd(-1))));
+    const ret = (..._) => next(new Promise((ok,ko) => waits[discipline]([ok,ko,_])).then(() => (ret.fn ? ret.fn : (...a)=>a)(...ret.args,..._), _ => { run++; throw _ }).finally(() => next(upd(-1))));
     ret.lifo	= () => { discipline='unshift'; return ret; };
     ret.fifo	= () => { discipline='push'; return ret; };
     ret.max	= max;
