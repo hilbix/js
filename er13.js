@@ -11,15 +11,40 @@
 const __CATCH__ = (f => f(document.currentScript?.dataset || {debug:'ER13'}, document.currentScript?.url))((ds,url) => {
 
   // __CATCH__(fn): calls fn(e,j) on errors, j is a JSON serializable object
+  const props = o =>
+    {
+      const prop = {};
+      const set = new Set(), sub = new Set().add(window);
+      let p = o;
+      while (p && !set.has(p))
+        {
+          set.add(p);
+          Object.getOwnPropertyNames(p).forEach(_ =>
+            {
+              if (_ in prop) return;
+              let x = o[_];
+              if (sub.has(x)) return;
+              const t = typeof x;
+              if (t === 'string') return sub.add(prop[_] = x);
+              if (t !== 'object') return;
+              sub.add(x);
+              let c;
+              if (x.outerHTML)			x = x.outerHTML;
+              else if (x instanceof Error)	{ `${x.stack}`.split('\n').forEach((s,i) => s && (prop[`${_}.stack[${i}]`] = s)); x=x.message }
+              else if (x instanceof Promise)	c = 'uncaught Promise';
+              else				c = `unsupported ${x}`;
+              if (c) { console.log?.(url||'(no url)', c, x); x	= `[see console: ${c}]` }
+              prop[_]= `${x}`;
+            })
+          p = Object.getPrototypeOf(p);
+        }
+      return prop;
+    }
   const CATCH = fn =>
     {
       // a global catch for errors and unhandled rejections
-      let w = e => { const v=e.error || e.reason; try {
-        let o={type:e.toString?.()}
-        if (v?.stack) o.stack = v.stack;
-        else o.reason = e.reason;	// Without .catch(THROW) you do not get a stackframe from Promise.reject()!
-        if (v?.cause) o.cause = v.cause;
-        if (v?.message) o.message = v.message;
+      let w = e => { const v=e.error || e.reason || e; try {
+        const o=props(e);
         ['filename','lineno','colno'].filter(_ => e[_]).forEach(_ => o[_]=e[_]);
         fn(e, o);
       } catch(e) { console.log?.('CATCHERR', e) } }
