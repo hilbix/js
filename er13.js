@@ -43,11 +43,11 @@ const __CATCH__ = (f => f(document.currentScript?.dataset || {debug:'ER13'}, doc
     CATCH((e,d) =>
       {
         const f = r => (f => f(document.getElementById(ds.append)))(o =>
-//            { console.log('f', o,r,ds.ms); return (
+//            { console.log('f', o,r,ds.appendms); return (
             o ? o.append(((f => f(document.createElement('PRE')))(l =>
                 {
                   l.innerText = Object.keys(d).map(k => `${k}: ${d[k]}`).join('\n');
-                  if (ds.ms != 0) setTimeout(() => l.remove(), parseInt(ds.ms) || 33333);
+                  if (ds.appendms != 0) setTimeout(() => l.remove(), parseInt(ds.appendms) || 33333);
                   if (!ds.noclick)
                     l.onclick = () => { try { navigator.clipboard.writeText(l.innerText).then(() => l.remove()); } catch(e) { console.log('failed to copy error message to clip', e) }};
                     return l;
