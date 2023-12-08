@@ -1,6 +1,10 @@
 // HTML driven module loader with URL fallback support
 // (this currently is a bit chatty on console)
 //
+// See loadmain.js how to use this!
+//
+///////////////////////////////////
+//
 // This does not support dynamic loading of a module
 // but allows fallback URLs in case the primary URL fails.
 //
