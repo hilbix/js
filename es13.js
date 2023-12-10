@@ -1583,6 +1583,13 @@ class _E extends _E0
   get SAMP()		{ return this._MK('samp') }
   get MARK()		{ return this._MK('mark') }		// IE9+
 
+  get H1()		{ return this._MK('h1') }
+  get H2()		{ return this._MK('h2') }
+  get H3()		{ return this._MK('h3') }
+  get H4()		{ return this._MK('h4') }
+  get H5()		{ return this._MK('h5') }
+  get H6()		{ return this._MK('h6') }
+
   get B()		{ return this._MK('b') }		// bold
   get Q()		{ return this._MK('q') }
   get S()		{ return this._MK('s') }
@@ -1619,6 +1626,9 @@ class _E extends _E0
   img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }	// .img(url, function(args..) { this === E.IMG.src(src) }, args..)
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
+  tdl(...a)		{ for (const t of a) this.TD.attr({align:"left"}).text(t); return this }
+  tdr(...a)		{ for (const t of a) this.TD.attr({align:"right"}).text(t); return this }
+  tdc(...a)		{ for (const t of a) this.TD.attr({align:"center"}).text(t); return this }
   li(...a)		{ for (const t of a) this.LI.text(t); return this }
   b(...a)		{ this.B.text(...a); return this }
   u(...a)		{ this.U.text(...a); return this }
@@ -1626,6 +1636,12 @@ class _E extends _E0
   sup(...a)		{ this.SUP.text(...a); return this }
   tt(...a)		{ this.TT.text(...a); return this }
   code(...a)		{ this.CODE.text(...a); return this }
+  h1(...a)		{ this.H1.text(...a); return this }
+  h2(...a)		{ this.H2.text(...a); return this }
+  h3(...a)		{ this.H3.text(...a); return this }
+  h4(...a)		{ this.H4.text(...a); return this }
+  h5(...a)		{ this.H5.text(...a); return this }
+  h6(...a)		{ this.H6.text(...a); return this }
   // generic click() function:  call of fn DIFFERS FROM .on('click', fn, args..)!
   // e.click(fn, args..)	// calls fn(args.., event, e, on-instance) with this bound to e
   // click('mod', fn, args..)	// calls mod(true), fn(), mod(false)
