@@ -503,6 +503,7 @@ const single_run = (fn, ...a) =>
   };
 
 // Wrap a functioncall such, that it is only called once in a cycle or frame:
+// (For synchronous functions only.  For ASYNC functions see single_run)
 //
 // const doitonce = once_per_cycle(console.log)
 // doitonce(1);         // returns void 0
