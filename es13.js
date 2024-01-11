@@ -281,6 +281,7 @@ const Ptimeout = (ms, ...prom) =>
 // Get(URL, _ => fetchProgress(_, fn, args..))
 /* */ const Fetch	= (u,o,p) => fetch(u,o).then(p || (_=>_)).then(r => r.ok ? r : Promise.reject(`${r.status}: ${r.url}`))
 /* */ const Get	= (u,p) => Fetch(u, { cache:'no-cache' }, p)
+/* */ const GetC	= (u,p) => Fetch(u, { cache:'no-cache', credentials:'include' }, p)
 /* */ const _MTFUD	= (m,t,f) => (u,d,p) => Fetch(u, { cache:'no-cache', method:m, headers:{'Content-Type':t}, body:f ? f(d) : d }, p)
 /* */ const PostText	= _MTFUD('POST', 'text/plain')
 /* */ const PutText	= _MTFUD('PUT', 'text/plain')
@@ -291,6 +292,7 @@ const Ptimeout = (ms, ...prom) =>
 /* */ const _Json	= p => p.then(r => r.status==200 ? r.json() : THROW(r.status))
 /* */ const _Text	= p => p.then(r => r.status==200 ? r.text() : THROW(r.status))
 /* */ const GetText	= (u,p) => _Text(Get(u,p))
+/* */ const GetTextC	= (u,p) => _Text(GetC(u,p))
 /* */ const GetJSON	= (u,p) => _Json(Get(u,p))
 
 // Why isn't something similar already in the spec as an option?
