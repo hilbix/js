@@ -1563,6 +1563,7 @@ class _E extends _E0
   get FORM()		{ return this._MK('form') }
   get LABEL()		{ return this._MK('label') }
   get IFRAME()		{ return this._MK('iframe') }
+  get CANVAS()		{ return this._MK('canvas') }
 
   get DL()		{ return this._MK('dl') }
   get DT()		{ return this._MK('dt') }
