@@ -1650,16 +1650,28 @@ class _E extends _E0
   // e.click(fn, args..)	// calls fn(args.., event, e, on-instance) with this bound to e
   // click('mod', fn, args..)	// calls mod(true), fn(), mod(false)
   // click('mod', null, args..)	// calls mod(true), mod(false) -- do not use
-  // click('mod', args..)	// calls special mod
+  // click('mod', args..)	// calls special mod (there are currently none, except you add one yourself)
+  // see ModFn below for modifiers
   click(...a)		{ this.CLICK(...a); return this }
-  CLICK(...a)
+  CLICK(...a)		{ return this._CLICK(true, true, ...a) }
+  // blick is same as click() but in bubble phase
+  blick(...a)		{ this.BLICK(...a); return this }
+  BLICK(...a)		{ return this._CLICK(false, false, ...a) }
+  // plick is same as blick() but does not do preventDefault.
+  plick(...a)		{ this.PLICK(...a); return this }
+  PLICK(...a)		{ return this._CLICK(true, false, ...a) }
+  _CLICK(prevent, capture,...a)
     {
+      // XXX TODO XXX allow more than one modifier
+      // XXX TODO XXX allow modifiers with arguments
+      // XXX TODO XXX allow modifiers like "bubble" or "capture" to get rid of blick() hack
+      // XXX TODO XXX allow modifier 'more' to not do preventDefault()
       const mod	= ModFn.get(a[0]);
       if (mod)
         a.shift();
       const fn	= a.shift();
-      const on	= new ON('click');
-      on.add(async _ =>
+      const on	= new ON('click', capture);
+      const run	= async _ =>
         {
           try {
             // mod(true) might augment the fn
@@ -1671,8 +1683,8 @@ class _E extends _E0
             // mod(false)
             mod && await this.CATCH(mod,false,fn,a,_,on)
           }
-        });
-      return on.attach(this);
+        };
+      return on.add(_ => { run(_); return prevent }).attach(this);
     }
   button(text,...a)	{ this.BUTTON.text(text).CLICK(...a); return this }
 
