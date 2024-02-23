@@ -23,7 +23,7 @@ const __CATCH__ = (f => f(document.currentScript?.dataset || {debug:'ER13'}, doc
             {
               if (_ in prop) return;
               let x = o[_];
-              if (sub.has(x)) return;
+              if (!x || sub.has(x)) return;
               const t = typeof x;
               if (t === 'string') return sub.add(prop[_] = x);
               if (t !== 'object') return;
