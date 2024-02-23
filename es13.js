@@ -1654,6 +1654,7 @@ class _E extends _E0
   h4(...a)		{ this.H4.text(...a); return this }
   h5(...a)		{ this.H5.text(...a); return this }
   h6(...a)		{ this.H6.text(...a); return this }
+  div(...a)		{ this.DIV.text(...a); return this }
   // generic click() function:  call of fn DIFFERS FROM .on('click', fn, args..)!
   // e.click(fn, args..)	// calls fn(args.., event, e, on-instance) with this bound to e
   // click('mod', fn, args..)	// calls mod(true), fn(), mod(false)
