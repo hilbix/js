@@ -1480,7 +1480,15 @@ class _E extends _E0
   get $class()		{ return this.$.classList }
   // XXX TODO XXX missing: .$class = [list] so this is idempotent: .$class = .$class
   // .$class = {classname:true, classname2:false, classname3:void 0}	// latter is toggled
-  set $class(o)		{ for (const a in o) this.$.classList.toggle(a, o[a]) }			// XXX TODO XXX $all!
+  set $class(o)							// XXX TODO XXX $all!
+    {
+      if (isObject(o))
+        for (const a in o) this.$.classList.toggle(a, o[a])
+      else if (isArray(o))
+        this.$.classList = o;
+      else
+        this.$.className = o;
+    }
 
   // Only create Style-class if it is really needed
   get $style()		{ return this.__cache.style ? this.__cache.style : this.__cache.style = Styles(this) }
