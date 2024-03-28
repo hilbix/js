@@ -73,7 +73,7 @@ try { // Else workers die if you try to access 'document', which is plain bullsh
 /* */ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
       //v defArr
       //^ DEPRECATED
-/* */ const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok);
+/* */ const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok());
       //^ DONOTHING
       //v E
       //v Fetch FetchProgress fetchProgress
@@ -2115,7 +2115,50 @@ class Q
     }
   };
 
+// q = new EasyQ();						// Easy to use Queue
+//
+// .addEventListener('event', q.CB(qargs..))			// enqueues all the events received into the queue
+// .addEventListener('event', q.FN((..._) => _, args..))	// same, but calls the given fn and enqueues what this returns
+//								// use q.Fn() if fn is asynchronous
+// for await (const val of q) {					// val is [qargs..,args_of_callback]
+//
+// return new Promise(q.P())					// resolves the promise based on the next enqueued value
+// q.push(123)							// resolves the promise with 123
+// q.stop(123)							// rejects the promise with 123
+//
+// await q.push(v);	// push value
+// v === await q.Pop();	// get value
+class EasyQ
+  {
+  constructor()		{ this._q = [] }
 
+  get cnt()		{ return this._q.length }
+  signal()		{ this._p?.ok(); this._p = void 0; return this }
+
+  async Wait()		{ if (!this._p) this._p	= PO(); await this._p.p }
+  async Has()		{ while (!this._q.length && !this._stop) await this.Wait(); return this._q.length }
+
+  _push(o)		{ if (this._stop) throw 'queue already stopped'; this._q._push(o); return this.signal() }
+  _next()		{ const r = this._q.shift(); this.signal(); if (!r.v) throw r.e; return r.v }
+
+  push(...v)		{ return this._push({v:v.length===1 ? v[0] : v}) }
+  async Pop()		{ if (await this.Has()) return this._next() }
+
+  stop(...e)		{ if (e.length) this._q._push({e}); this._stop = true; return this.signal() }
+  async Stop(...e)	{ this.stop(...e); while (this._q.length) await this.Wait() }	// await q.Stop() waits for q drained
+
+  P()			{ return async (o,k) => { if (await this.Has()) o(this._next()); else k(); } }
+
+  CB(...a)		{ return (..._) => this.push(...a,..._) }
+  FN(fn,...a)		{ return (..._) => { try { const v = fn(...a,..._); this._push({v}) } catch (e) { this._push({e}) } } }
+  Fn(fn,...a)		{ return (..._) => { new Promise(o => o(fn(...a,..._))).then(v => this._push({v}), e => this._push({e})) } }
+
+  async* [Symbol.asyncIterator]()
+    {
+      while (await this.Has())
+        yield this._next();
+    }
+  };
 
 
 //
@@ -2739,11 +2782,195 @@ class WeakCache
   };
 
 
+// AsyncActionQueue() returns an object with following properties:
+// .run(args)	runs the action queue.
+//		Returns a Promise which resolves to args if everything went smoothly
+//		Else it catches the last thrown error or void 0 if interruped
+// .add(cb,...)	add action (callback) with calls cb(...,args)
+//		returns an object with two functions:
+//		.remove()	remove remove the cb.  Returns .state()
+//		.state()	Promise which resolves/rejects to the last (or current pending) invocation of the cb.
+//				If the cb was never called, this promise rejects.
+//		.next()		Promise which resolves to the next result of the invocation of cb
+//		.emit()		Return the Emit() class of this callback
+// .stop(clr)	stops running the queue until .start() is issued
+//		pending cbs are not called
+//		if clr is truthy, all pending cbs are aborted
+//		Returns a Promise which resolves when the queue was stopped
+//		It cancels if the queue is started or stopped again before the stop finished
+// .start(clr)	starts running the queue. The queue comes .start()ed
+//		Does nothing if already started.
+//		If clr is truthy, all pending actions and .run() calls are aborted
+//		Does not restart if nothing needs to be done.
+//		If .run() was called while it was stopped the queue is restarted with the args
+//		else if pending cbs need to be called the queue continues where it stopped
+//		Returns a Promise which resolves if the queue finishes running.
+//		It cancels if the queue is started or stopped again before the stop finished
+// Note that adding a new cb runs the cb automatically with the last .run() argument.
+// If there was none yet, then nothing happens.
+const AsyncActionQueue = () =>
+  {
+    let halt, po, run = PO(), pos, next, arg, head, tail;
+
+    const remove = o =>
+      {
+        if (!o.p) return;		// already removed
+        delete o.cb;			// mark it to be deleted
+
+        o.emit?._Emit('x');
+
+        if (pos && o === tail) return;	// we cannot delete the tail if not idle, else we lose newly .add()ed in this queue run
+
+        delete o.p;			// mark it deleted
+
+        if (o === head)	head		= o.tail;
+        if (o === tail)	tail		= o.head;
+        if (o.head)	o.head.tail	= o.tail;
+        if (o.tail)	o.tail.head	= o.head;
+
+        // empty o:
+        if (next === o) next = o.tail;
+        delete o.head;
+        delete o.tail;
+      }
+    const step = () =>
+      {
+        const start	= next;
+        if (!start || pos || halt)
+          return;			// nothing to do, already running or stopped
+
+        const args	= arg;
+        if (!args)
+          {				// cleared
+            next	= 0;		// stop this run
+            run.ko();			// signal run was aborted (as start != 0)
+            return;
+          }
+
+        next	= start.tail;		// remember next cb in queue to run after this one
+
+        const cb	= start.cb;
+        if (!cb)
+          {				// is this really needed?
+            remove(start);		// this node was not yet removed
+            return step();		// loop to next
+          }
+
+        pos	= start;		// lock this run
+        const p	= new Promise(_ => _(cb(...args)));	// call cb within Promise
+        start.p	= p;
+        p.then(_ => start.emit?._Emit('o', _), _ => start.emit?._Emit('k', _));
+        p.finally(() =>
+          {
+            if (pos !== start)
+              console.error('pos != start', {pos,start});
+            pos	= 0;
+            if (!next)
+              run.ok(args);		// signal end of this run
+            step();			// run the next thing
+          });
+      };
+
+    return	// why is no paranthese needed here?
+      {
+      run(...a)
+        {
+          arg	= a;
+
+          run.ko();			// cancel previous run
+          run	= PO();
+          step(next = head);
+          return run.p;
+        }
+      add(cb,...a)
+        {
+          if (!cb) throw 'missing callback function';
+          // XXX TODO XXX check for callable?
+
+          if (a.length)
+            cb	= (..._) => cb(...a, ..._);
+
+          const o = { head:tail, cb, p:Promise.reject() };
+
+          // add it to the queue
+          if (!head)
+            head = o;
+          if (tail)
+            tail.tail	= o;
+          tail	 = o;
+          if (o.head && !o.head.p)
+            remove(o.head);		// remove previous tail if marked to be deleted
+
+          const emit =	() =>
+            {
+              if (!o.emit)
+                {
+                  o.emit	= new Emit();
+                  o.emit._Emit('c');
+                }
+              return o.emit;
+            }
+
+          return (			// WTF: why are parantheses needed here?
+            { emit
+            , state:	() => { return o.p }
+            , remove:	() =>		// WTF: why is class type notation impossible here?
+              {
+                const p = o.p;		// remember last state
+                remove(o);		// remove from queue
+                return p;		// return last state
+              }
+            , next:	() =>		// this is not very efficient, sorry
+              {
+                const e	= emit();
+                return new Promise((ok,ko) => e.ON('o k', ({o,t,d}) => { if (t==='o') ok(d); else ko({t,d}); return true }));
+              }
+            }
+            );				// WTF: why are paratheses needed here?
+        }
+      stop(clr)
+        {
+          halt = true;			// stop running the queue
+          if (clr)
+            arg	= void 0;
+
+          po?.ko();			// cancel previous .start()/.stop() promise
+          po	 = PO();
+
+          if (pos)
+            pos.p.then(po.ok, po.ok);	// queue became idle
+          else
+            po.ok();			// queue is idle already
+
+          return po.p;
+        }
+      start(clr)
+        {
+          halt = false;			// allow running the queue
+          if (clr)
+            arg	= void 0;
+
+          po?.ko();			// cancel previous .start()/.stop() promise
+          po	 = PO();
+
+          if (run)
+            run.p.then(po.ok, po.ok);	// last run() finished
+          else
+            po.ok();
+
+          step();			// start the queue (if needed)
+
+          return po.p;
+        }
+      };
+  };
+
 // onResize(cb) calls cb({x,y,w,h}) on resizes where:
 // w	full width (of visible area)
 // h	full height
 // x	usable width (margin subtracted)
 // y	usable height
+// currently cbs cannot be removed anymore
 const onResize = (_=>_())(() =>
   {
     let wh, o = {}, run = 0, runs, b;
@@ -2761,9 +2988,19 @@ const onResize = (_=>_())(() =>
     // This circumvents the lack of Promises() not being cancelable in JS.
     // Also this allows to handle resizes gracefully by returing SleeP(100) or similar.
     const resize = () => runs = run < cbs.length && Promise.resolve(o).then(cbs[run++]).finally(resize);
+    const start = () =>
+      {
+        if (runs || init) return;
+        runs = true;	// lock other calls to start()
+        // setTimeout protects against following ugly error:
+        // ResizeObserver loop completed with undelivered notifications.
+        setTimeout(resize);
+      };
     let init = () =>
       {
+        if (!init) return;
         init	= void 0;	// never run twice
+
         b = document.body;	// document.body may be NULL on load, so do it here
 
         // Watch out for resizes
@@ -2771,27 +3008,23 @@ const onResize = (_=>_())(() =>
           {
             if (!get()) return;
 //            console.log('RESIZE', _, wh.$w, wh.$h);
-            run = 0;	// restart running the callbacks from the beginning
-            if (!runs)
-              {
-                runs = true;	// lock other calls to resize
-                // setTimeout protects against following ugly error:
-                // ResizeObserver loop completed with undelivered notifications.
-                setTimeout(resize);
-              }
+            run = 0;		// rerun the callbacks from the first
+            start();
           });
-        // Coveri the full visible area of the browser with a dummy DIV in background
+        // Cover the full visible area of the browser with a dummy DIV in background
         wh = E(b).DIV.style({position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:-999,opacity:0,visibility:'hidden'});
         r.observe(wh.$);	// detect when this dummy DIV becomes resized
 
         get();			// fill o (needs wh)
+        start();		// push current size to all cbs added before init ran
       };
+    // DomReady() not called here to reduce startup overhead, hence the "let init" trick
     return (cb, ...a) =>
       {
-        if (init) init();
+        if (init) DomReady.then(init);
         cbs.push(a.length ? _ => cb(...a, _) : cb);
-        if (!runs)
-          resize();	// push the current size to the newly added cb
+        start();		// push current size to the newly added cb
+        // perhaps in future return a function to remove the cb again
       }
   });
 
