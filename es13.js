@@ -2739,6 +2739,62 @@ class WeakCache
   };
 
 
+// onResize(cb) calls cb({x,y,w,h}) on resizes where:
+// w	full width (of visible area)
+// h	full height
+// x	usable width (margin subtracted)
+// y	usable height
+const onResize = (_=>_())(() =>
+  {
+    let wh, o = {}, run = 0, runs, b;
+    const cbs = [];
+    const get = () =>
+      {
+        const br = getComputedStyle(b);
+        const [w,h] = wh.$wh;
+        const x = b.offsetWidth;
+        const y = h - parseInt(br.marginTop) - parseInt(br.marginBottom);
+        if (x === o.x && y === o.y && w === o.w && h === o.h) return;
+        return o = { x,y,w,h };	// computed new usabe and full size
+      };
+    // Newly delivered resize events are delayed if a callback still is active.
+    // This circumvents the lack of Promises() not being cancelable in JS.
+    // Also this allows to handle resizes gracefully by returing SleeP(100) or similar.
+    const resize = () => runs = run < cbs.length && Promise.resolve(o).then(cbs[run++]).finally(resize);
+    let init = () =>
+      {
+        init	= void 0;	// never run twice
+        b = document.body;	// document.body may be NULL on load, so do it here
+
+        // Watch out for resizes
+        const r	= new ResizeObserver(_ =>
+          {
+            if (!get()) return;
+//            console.log('RESIZE', _, wh.$w, wh.$h);
+            run = 0;	// restart running the callbacks from the beginning
+            if (!runs)
+              {
+                runs = true;	// lock other calls to resize
+                // setTimeout protects against following ugly error:
+                // ResizeObserver loop completed with undelivered notifications.
+                setTimeout(resize);
+              }
+          });
+        // Coveri the full visible area of the browser with a dummy DIV in background
+        wh = E(b).DIV.style({position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:-999,opacity:0,visibility:'hidden'});
+        r.observe(wh.$);	// detect when this dummy DIV becomes resized
+
+        get();			// fill o (needs wh)
+      };
+    return (cb, ...a) =>
+      {
+        if (init) init();
+        cbs.push(a.length ? _ => cb(...a, _) : cb);
+        if (!runs)
+          resize();	// push the current size to the newly added cb
+      }
+  });
+
 //
 // NOT IMPLEMENTED YET below
 //
