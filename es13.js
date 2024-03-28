@@ -239,6 +239,7 @@ const OBfix = o =>
 
       // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
 /* */ const PO = () => { const o={}; o.p = new Promise((ok,ko) => { o.ok=ok; o.ko=ko }); return o }	// PromiseObject
+/* */ const POC = () => { const o = PO(); o.p.catch(IGN); return o }					// PromoseObject with default catch
 /* */ const PR = Promise.resolve();			// PRomise
 /* */ const PE = Promise.reject();			// PromisErr  WARNING: Only use PE instead of Promise.reject() if you want to suppress the "Uncaught in Promise" error by default!
 /* */ PE.catch(DONOTHING);				// shutup "Uncaught in Promise" due to PE
@@ -2810,7 +2811,7 @@ class WeakCache
 // If there was none yet, then nothing happens.
 const AsyncActionQueue = () =>
   {
-    let halt, po, run = PO(), pos, next, arg, head, tail;
+    let halt, po, run = POC(), pos, next, arg, head, tail;
 
     const remove = o =>
       {
@@ -2871,18 +2872,17 @@ const AsyncActionQueue = () =>
           });
       };
 
-    return	// why is no paranthese needed here?
-      {
-      run(...a)
+    return (
+      { run:	(...a) =>
         {
           arg	= a;
 
           run.ko();			// cancel previous run
-          run	= PO();
+          run	= POC();
           step(next = head);
           return run.p;
         }
-      add(cb,...a)
+      , add:	(cb,...a) =>
         {
           if (!cb) throw 'missing callback function';
           // XXX TODO XXX check for callable?
@@ -2890,7 +2890,7 @@ const AsyncActionQueue = () =>
           if (a.length)
             cb	= (..._) => cb(...a, ..._);
 
-          const o = { head:tail, cb, p:Promise.reject() };
+          const o = { head:tail, cb, p:PR };
 
           // add it to the queue
           if (!head)
@@ -2928,7 +2928,7 @@ const AsyncActionQueue = () =>
             }
             );				// WTF: why are paratheses needed here?
         }
-      stop(clr)
+      , stop: clr =>
         {
           halt = true;			// stop running the queue
           if (clr)
@@ -2944,7 +2944,7 @@ const AsyncActionQueue = () =>
 
           return po.p;
         }
-      start(clr)
+      , start:	clr =>
         {
           halt = false;			// allow running the queue
           if (clr)
@@ -2962,7 +2962,8 @@ const AsyncActionQueue = () =>
 
           return po.p;
         }
-      };
+      }
+    );
   };
 
 // onResize(cb) calls cb({x,y,w,h}) on resizes where:
@@ -2973,8 +2974,8 @@ const AsyncActionQueue = () =>
 // currently cbs cannot be removed anymore
 const onResize = (_=>_())(() =>
   {
-    let wh, o = {}, run = 0, runs, b;
-    const cbs = [];
+    let q, b, wh, o;
+
     const get = () =>
       {
         const br = getComputedStyle(b);
@@ -2987,44 +2988,33 @@ const onResize = (_=>_())(() =>
     // Newly delivered resize events are delayed if a callback still is active.
     // This circumvents the lack of Promises() not being cancelable in JS.
     // Also this allows to handle resizes gracefully by returing SleeP(100) or similar.
-    const resize = () => runs = run < cbs.length && Promise.resolve(o).then(cbs[run++]).finally(resize);
-    const start = () =>
+    const ready = () =>
       {
-        if (runs || init) return;
-        runs = true;	// lock other calls to start()
-        // setTimeout protects against following ugly error:
-        // ResizeObserver loop completed with undelivered notifications.
-        setTimeout(resize);
-      };
-    let init = () =>
-      {
-        if (!init) return;
-        init	= void 0;	// never run twice
-
-        b = document.body;	// document.body may be NULL on load, so do it here
-
         // Watch out for resizes
         const r	= new ResizeObserver(_ =>
           {
             if (!get()) return;
 //            console.log('RESIZE', _, wh.$w, wh.$h);
-            run = 0;		// rerun the callbacks from the first
-            start();
+            q.run(o);
           });
+
         // Cover the full visible area of the browser with a dummy DIV in background
-        wh = E(b).DIV.style({position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:-999,opacity:0,visibility:'hidden'});
+        o	= {};
+        b	= document.body;	// document.body may be NULL on load, so do it here
+        wh	= E(b).DIV.style({position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:-999,opacity:0,visibility:'hidden'});
         r.observe(wh.$);	// detect when this dummy DIV becomes resized
 
-        get();			// fill o (needs wh)
-        start();		// push current size to all cbs added before init ran
+        q.run(get());
       };
-    // DomReady() not called here to reduce startup overhead, hence the "let init" trick
+    const init = () =>
+      {
+        q	= AsyncActionQueue();
+        DomReady.then(ready);
+      }
     return (cb, ...a) =>
       {
-        if (init) DomReady.then(init);
-        cbs.push(a.length ? _ => cb(...a, _) : cb);
-        start();		// push current size to the newly added cb
-        // perhaps in future return a function to remove the cb again
+        if (!q) init();
+        q.add(cb, ...a);
       }
   });
 
