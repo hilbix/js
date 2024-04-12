@@ -13,7 +13,7 @@
 # ES12	WeakRef: Workaround leaks memory.
 
 V=13
-TARG=cry/sha256c.js cry/md5c.js cry/sha256.js cry/md5.js er6.js es6.js
+TARG=cry/sha256c.js cry/sha1c.js cry/md5c.js cry/sha256.js cry/sha1.js cry/md5.js er6.js es6.js
 
 # What happens if Babel fails?
 # This is a babel bug not a bug of this!
@@ -51,6 +51,17 @@ cry/md5c.js:	md5c.js.in unroll.sh Makefile .md5c~ | cry
 	mv '$@.tmp' '$@'
 
 .md5c~:
+	touch '$@'
+
+cry/sha1.js:	cry/sha1c.js babel.sh Makefile
+	./babel.sh '$<' '$@' >'$@.tmp'
+	mv '$@.tmp' '$@'
+
+cry/sha1c.js:	sha1c.js.in unroll.sh Makefile .sha1~ | cry
+	./unroll.sh '$<' >'$@.tmp'
+	mv '$@.tmp' '$@'
+
+.sha1~:
 	touch '$@'
 
 cry/sha256.js:	cry/sha256c.js babel.sh Makefile
