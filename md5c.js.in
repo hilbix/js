@@ -27,10 +27,10 @@
 // then
 //	const md5 = MD5.md5('string');
 // or
-//	const md5 = new MD5();
-//	const a = md5.init().update_str('str1').update_str('str2').end().$hex;
-//	const b = md5.init().update8(new UInt8Array(something))   .end().$bin;
-// This can be repeated:    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//	const md5s = new MD5();
+//	const a = md5s.init().update_str('str1').update_str('str2').end().$hex;
+//	const b = md5s.init().update8(new UInt8Array(something))   .end().$bin;
+// This can be repeated:     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 # Tables
 
