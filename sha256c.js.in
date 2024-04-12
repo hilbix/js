@@ -23,11 +23,11 @@
 // How to use?
 //	<script src="sha256.js"></script>
 // then
-//	const shas256 = SHA256.md5('string');
+//	const shas256 = SHA256.sha256('string');
 // or
-//	const shas256 = new SHA256();
-//	const a = shas256.init().update_str('str1').update_str('str2').end().$hex;
-//	const b = shas256.init().update8(new UInt8Array(something))   .end().$bin;
+//	const sha256s = new SHA256();
+//	const a = sha256s.init().update_str('str1').update_str('str2').end().$hex;
+//	const b = sha256s.init().update8(new UInt8Array(something))   .end().$bin;
 // This can be repeated:        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 const SHA256 = (_=>_())(() => {
@@ -85,7 +85,6 @@ const SHA256 = (_=>_())(() => {
           }
       }
 
-// XXX bis hier korrekt
 ///////////////////////
 
 !ctx	a 0
@@ -260,7 +259,6 @@ const SHA256 = (_=>_())(() => {
       }
 
 //////////////////////
-// XXX ab hier vermutlich korrekt
 
     update8(b)			// Uint8Array
       {
