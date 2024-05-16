@@ -1805,7 +1805,7 @@ const E = (function(){
       if (isString(e)) e = document.getElementById(e);
       if (!e || !(e instanceof Node))
         {
-          console.log('E called with invalid object', a);
+          console.error('E called with invalid object', a);
           return e;
         }
 
@@ -1915,7 +1915,7 @@ class Emit
   ON(what, fn)
     {
       const id = [];
-      for (const t in what.split(' '))
+      for (const t of what.split(' '))
         if (t)
           {
             const m = this.__on[t];
