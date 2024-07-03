@@ -358,6 +358,110 @@ const encodeHTML = _ => { const t=document.createElement('textarea'); t.innerTex
 
 const strsplice = (s,from,to,replace) => `${s.substring(0,from)}${replace}${s.substring(to)}`;
 
+// choices([1,2,3])		=> [[1],[2],[1,2],[3],[2,3],[1,3],[1,2,3]]
+// choices([1,2,3],2)		=> [[1,2],[1,3],[2,3],[1,2,3]]
+// choices([1,2,3],2,2)		=> [[1,2],[1,3],[2,3]]
+// with generators min and max are probably needed (as we do not know how long the generator is)
+// Array.from(choices(...)) to get it as Array
+const choices = function*(gen,min,max)
+{
+  min |= 0;
+  max |= 0;
+  if (max && max < min) max = min;
+  max--;
+  min--;
+
+  const was = [];
+  for (const x of gen)
+    {
+      if (was.length >= min)
+        for (const t of choice(was, []))
+          yield t.concat([x]);
+      was.push(x);
+    }
+
+  function* choice(arr, r, ign)
+    {
+      if (r.length >= min && !ign)
+        yield r;
+      if ((max<0 || r.length < max) && arr.length)
+        {
+          const a = arr.slice();
+          const e = a.shift();
+          yield* choice(a, r.slice(), 1);
+          r.push(e);
+          yield* choice(a, r.slice());
+        }
+    }
+}
+
+// perms([1,2,3])		=> [[1,2,3],[1,3,2],[3,1,2],[2,1,3],[2,3,1],[3,2,1]]
+// perms([1,2],1)		=> [[1],[1,2],[2],[2,1]]
+// perms([1,2],0)		=> [[1],[1,2],[2],[2,1]]
+// with generators min and max are probably needed (as we do not know how long the generator is)
+// Array.from(perms(...)) to get it as Array
+const perms = function*(gen,min,max)
+{
+  min ??= gen.length;
+  min |= 0;
+  max |= 0;
+  if (max && max < min) max = min;
+  min--;
+  max--;
+
+  const was = [];
+  for (const x of gen)
+    {
+      if (was.length >= min)
+        for (const t of perm(was, []))
+          for (let i=max>=0 && max<t.length ? max : t.length; i>=0; i--)
+            {
+              const r = t.slice();
+              r.splice(i,0,x);
+              yield r;
+            }
+      was.push(x);
+    }
+  function* perm(arr, r)
+    {
+      if (r.length >= min)
+        yield r;
+      if (max<0 || r.length < max)
+        for (let i=0; i<arr.length; i++)
+          {
+            const a = arr.slice();
+            yield* perm(a, r.concat(a.splice(i, 1)));
+          }
+    }
+}
+
+// alts([[a,b],[c,d]])		=> [[a,c],[a,d],[b,c],[b,d]]
+// alts([[[1,2],3],[a,[b,c]]])	=> [[1,2,a],[1,2,b,c],[3,a],[3,b,c]]
+// first argument can be Array or generator
+// Array.from(alts(...)) to get it as Array
+const alts = function*(gen)
+{
+  const had = {};
+  for (const x of gen)
+    yield* alt(x, []);
+
+  function* alt(arr, r)
+    {
+      while (arr.length)
+        {
+          const e = arr.shift();
+          if (Array.isArray(e))
+            {
+              for (const x of e)
+                yield* alt(arr.slice(), r.concat(x));	// not .concat([x]), so array elements can insert more than 1 element
+              return;
+            }
+          r.push(e);
+        }
+      yield r;
+    }
+}
+
 // (ES11->ES13: I am not sure if and how Babel handles this correctly, so I keep it as-is for now.)
 // Dummy support for perhaps missing WeakRefs.  (This is mainly for Babel)
 // The fallback is not good as it leaks memory, but we cannot implement this any better way here.
@@ -1142,6 +1246,7 @@ const Styles = (props =>
     outlineStyle:		2,
     outlineWidth:		2,
     overflow:			2,
+    overflowWrap:		3,
     overflowX:			3,
     overflowY:			3,
     padding:			1,
