@@ -33,7 +33,7 @@
 //
 // Example which works for Octokit, as of 2023-06 the documented URL fails to load:
 //
-//	<meta name="loadmodule.js" data-as="octokit" content="https://cdn.skypack.dev/octokit" data-0="https://cdn.skypack.dev/octokit@v2.0.14"/>
+//	<meta name="loadmodule" data-as="octokit" content="https://cdn.skypack.dev/octokit" data-0="https://cdn.skypack.dev/octokit@v2.0.14"/>
 //	<script type="module" src="loadmodule.js"></script>
 //
 // If you use it programmatically (via import()) it works nearly the same:
@@ -123,6 +123,8 @@
 //
 // But not today.
 
+// This is a module, so global namespace is not polluted
+
 // I really have no idea what happens if import.meta isn't supported,
 // as I did not find a way to test that.  Sorry.
 // https://stackoverflow.com/a/76493355/490291
@@ -162,6 +164,8 @@ const get = _ => new Proxy(mods,
     }
   });
 
+// import {modules,url as URLS} from modules;
+// await URLS.module1 === await modules.module1.url
 export const module	= get('module');
 export const url	= get('url');
 export const base	= get('base');
@@ -170,15 +174,14 @@ export const error	= get('error');
 
 function load(m)
 {
-  console.log(me, 'loading', m);
-
-  const fin	= m[1]['fin'];
-  if (fin)
-    (fins[fin] || (fins[fin] = [])).push(base);
+  console.log(me, 'load:', ...m[0], 'with:', JSON.stringify(m[1]));
 
   const base	= m[0][0];
-  const name	= m[1]['as'] || remove_js(base);
+  const name	= m[1]['as'] || remove_js(base).split('/').join('_');	// convenience: replace / with _ to allow easier access
   const detail	= {base,name};
+  const fin	= m[1]['fin'];
+  if (fin)
+    (fins[fin] || (fins[fin] = [])).push(detail);
   const trig	= type => mkev(m[1][type], detail);
 
   const run = async () =>
@@ -190,9 +193,11 @@ function load(m)
           detail.url	= url;
           trig('trace');
 
-          const module = await import(url.split('/',2).length<2 ? `./${url}` : url);
+          // WTF why?
+          const module = await import(url.startsWith('/') || url.startsWith('./') || url.startsWith('../') ? url : `./${url}`);
           if (url !== base)
             console.log(me, 'loaded', url, 'instead of', base);
+          //else console.log(me, 'loaded', url);
 
           delete detail.error;
           detail.module	= module;
@@ -236,11 +241,9 @@ export const all = Promise.allSettled(list)
 // const module1url = await modules.module1.url;
 //
 // Hence
-//	await modules.module1.module
-// is the same as
-//	await modules.module1
+//	await modules.module1.module === await modules.module1
 // and
-//	await (await (await modules).module1).url !== await modules.module1.url
+//	(await (await modules).module1).url !== modules.module1.url
 // Keep that in mind.
 export default new Proxy(mods,
   { get(t,p,r)
