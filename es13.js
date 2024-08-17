@@ -1493,6 +1493,10 @@ class _E0 extends Callable
   // const r=[]; e.TABLE.TR.td('hello').TD.push(r).text('world').$$.td('again');
   // const r=[]; e.TABLE.TR.td('hello').TD.text('world').push(r).$$.td('again');
   push(...a) { a.forEach(_ => isFunction(_) ? _(this) : _.push(this)); return this }
+  // const x={}; e.TABLE.TR.td('hello').run(_ => x.hello = _.TD.text('world')).td('again');
+  // const x={}; e.TABLE.TR.td('hello').TD.put(x, 'hello').text('world').$$.td('again');
+  // const x={}; e.TABLE.TR.td('hello').TD.text('world').put(x, 'hello').$$.td('again');
+  put(...a) { let o; while (a.length) { const b=a.shift(); if (isFunction(b)) { a=b(this, ...a); continue } if (Array.isArray(b)) b.push(this); else if (!isString(b)) o=b; else o[b]=this }
   };
 
 class _E extends _E0
