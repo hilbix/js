@@ -194,7 +194,7 @@ function load(m)
           trig('trace');
 
           // WTF why?
-          const module = await import(url.startsWith('/') || url.startsWith('./') || url.startsWith('../') ? url : `./${url}`);
+          const module = await import(url.includes('://') || url.startsWith('/') ? url : `./${url}`);
           if (url !== base)
             console.log(me, 'loaded', url, 'instead of', base);
           //else console.log(me, 'loaded', url);
