@@ -71,6 +71,12 @@ try { // Else workers die if you try to access 'document', which is plain bullsh
 /* */ //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
 /* */ const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
 /* */ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
+
+/* */ // mapSet(map,k,v)		map.set(k,v) which returns the value
+/* */ // mapDef(map,k,fn,args..)	returns map[k], initialized with fn(args..) if not known already
+/* */ const mapSet	= (map,k,v) => (map.set(k,v), v)
+/* */ const mapDef	= (map,k,fill,...a) => map.has(k) ? map.get(k) : mapSet(map, k, fill(...a));
+
       //v defArr
       //^ DEPRECATED
 /* */ const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok());
@@ -484,7 +490,6 @@ const es11WeakRef = (() =>
     }
   })();
 
-
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 // OVERVIEW: (sync:immediately, async:microtask, cycle:task queue, frame:animation frame)
@@ -508,18 +513,49 @@ const tmpcache = (fn,...a) =>			// use a real function here to provide 'this'
     {						// must be function as we need 'this' for caching
       if (ret)
         {
-          if (this in ret)
-            return ret[this];			// cached value
+          if (ret.has(this))
+            return ret.get(this);		// cached value
         }
       else
         {
           ret	= new WeakMap();		// temporary cache
-          setTimeout(_ => ret = void 0);	// expire at next loop
+          setTimeout(() => ret = void 0);	// expire at next loop
         }
-      ret[this]	= void 0;			// avoid recursion
-      return ret[this] = fn.apply(this, a);	// cache real value (from this cycle)
+      ret.set(this, void 0);			// avoid recursion
+      const v = fn.apply(this, a);
+      ret.set(this, v);				// cache real value (from this cycle)
+      return v;
     }
 };
+
+// gather function calls to execute at the end of the current cycle.
+// function calls are remembered based on the first argument only.
+// This differentiates by 'this', so can initialize methods.
+// class X { thing = gather(function (args) { ... }) };
+// x = new X();
+// x.thing('a');
+// x.thing('b');
+// x.thing('a');
+// // on the next cycle fn('a') and fn('b') are called, nothing else
+const gather = fn =>
+  {
+    let map;
+    const run = () =>
+      {
+        const r	= map;
+        map	= void 0;
+        r.forEach((_,t) => _.forEach(a => fn.apply(t,a)));	// crash early on bugs
+      };
+    return function (...a)
+      {
+        if (!map)
+          {
+            map	= new Map();
+            setTimeout(run);					// run after this cycle
+          }
+        mapDef(map, this, () => new Map()).set(a[0], a);	// remember last added key only
+      }
+  };
 
 class Cancelled
   {
@@ -1090,7 +1126,13 @@ const Styles = (props =>
           const p = props[prop];
           if (!p) throw new ReferenceError('unknown property '+prop);
           if (isString(p)) prop=p;
-          return Reflect.get(ob.$.style, prop, receiver);
+          return ob.$.style[prop];
+          // Note that (perhaps next needs receiver = ob.$.style, but it works in Chrome!):
+          // return Reflect.get(ob.$.style, prop, receiver); fails on FF with
+          // Uncaught TypeError: 'get alignContent' called on an object that does not implement interface CSS2Properties.
+          // Following got only 3 hits (one of them just an translated page):
+          // https://www.google.com/search?q=%22called+on+an+object+that+does+not+implement+interface+CSS2Properties%22
+          // see also https://stackoverflow.com/a/78746758/490291
         }
       , set: function (ob, prop, val)
         {
@@ -1328,9 +1370,20 @@ class _E0 extends Callable
 
   constructor(e)	{ super(); this.__e = (this.__E = e ? mkArr(e) : [])[0] || FRAGMENT() }
   get $()		{ return this.__e; }
-  get $all()		{ return this.__E; }		// remove in favor of Symbol.iterator
+  get $all()		{ return this.__E; }		// Symbol.iterator also works for FRAGMENT() case
+  all(fn, ...a)		{ for (const _ of this) fn(_, ...a); return this }
+  allev(ev,...a)	{ return this.all(...a).mkev(ev) }
+  // gather all events within a cycle
+  // events are only dispatched to the first element for efficiency reason
+  mkev(_)		{ _.split(' ').forEach(_ => _ && this._mkev(_)); return this }
+  _mkev = gather(function (_)
+    {
+      this.$.dispatchEvent(new CustomEvent(`_${_}`, { detail:this }));
+    });
+
   CHAIN(fn, ...a)	{ return E0(!fn || !fn.call || (fn instanceof _E0 && !a.length) ? fn : fn.call(this,...a)) }
   chain(...a)		{ return this.CHAIN(...a) || this }
+  // chain(fn, args..) is like run(fn, args) but also allows chain(E()) or chain()
 
   get $data()		{ return this.__d || (this.__d = {}); }
   data(x,y)		{ this.$data[x]=y; return this }
@@ -1378,6 +1431,7 @@ class _E0 extends Callable
       return this;
     };
 
+  // The 2nd case can only happen on FRAGMENT()s like E() or E.DIV in which case .$all does not work
   *[Symbol.iterator]()	{ if (this.__E.length) yield* this.__E; else if (this.__e) yield* Array.from(this.__e.childNodes) }
   *MAP(fn, ...a)	{ for (const e of this) yield fn(e, ...a) }
   //forEach(...a)	{ return this.run(...a) }	// made no sense!
@@ -1570,45 +1624,46 @@ class _E extends _E0
 //set $(e)		{ this.$ = e === void 0 ? e : isString(e) ? document.getElementById(e) : e }
 //e(e)			{ if (e) this.$ = e; return this }
 
-  get $tag()		{ return this.$.nodeName }	// DIV, SPAN, etc.
-  get $text()		{ return this.$.textContent }	// innerText causes reflow
-  set $text(s)		{ return this.$.textContent = s }	// innerText has bad siedeffects on IE<=11			// XXX TODO XXX $all!
-  get $align()		{ return this.$.align }
-  set $align(a)		{ this.$.align = a }			// XXX TODO XXX $all!
+  get $tag()		{ return this.$.nodeName }		// DIV, SPAN, etc.
+  get $text()		{ return this.$.textContent }		// innerText causes reflow (and bad on IE<=11)
+  set $text(s)		{ this.allev('text', $ => $.textContent=s) }
+  get $align()		{ return this.$style.textAlign }	// .$.align is deprecated
+  set $align(a)		{ this.$style.textAlign = a; this.mkev('align') }	// now use CSS
   get $id()		{ return this.$.id }
-  set $id(id)		{ this.$.id = id }
+  set $id(id)		{ this.$.id = id }			// ONLY THE FIRST! ($.id is unique)
   get $value()		{ return this.$.value }
-  set $value(v)		{ this.$.value = v }			// XXX TODO XXX $all!
+  set $value(v)		{ this.allev('value', $ => $.value=v) }
   get $src()		{ return this.$.src }
-  set $src(u)		{ this.$.src = u }			// XXX TODO XXX $all!
+  set $src(u)		{ this.allev('src', $ => $.src=u) }
   get $alt()		{ return this.$.alt }
-  set $alt(u)		{ this.$.alt = u }			// XXX TODO XXX $all!
+  set $alt(u)		{ this.allev('alt', $ => $.alt=u) }
   get $checked()	{ return this.$.checked }
-  set $checked(b)	{ this.$.checked = !!b }		// XXX TODO XXX $all!
+  set $checked(b)	{ b=!!b; this.allev('checked', $ => $.checked=b) }
   get $disabled()	{ return this.$.disabled }
-  set $disabled(b)	{ this.$.disabled = !!b }
+  set $disabled(b)	{ b=!!b; this.allev('disabled', $ => $.disabled=b) }
   get $class()		{ return this.$.classList }
   // XXX TODO XXX missing: .$class = [list] so this is idempotent: .$class = .$class
   // .$class = {classname:true, classname2:false, classname3:void 0}	// latter is toggled
   set $class(o)							// XXX TODO XXX $all!
     {
       if (isObject(o))
-        for (const a in o) this.$.classList.toggle(a, o[a])
+        this.all($ => { for (const a in o) $.classList.toggle(a, o[a]) });
       else if (isArray(o))
-        this.$.classList = o;
+        this.all($ => $.classList = o);
       else
-        this.$.className = o;
+        this.all($ => $.className = o);
+      this.mkev('class');
     }
 
   // Only create Style-class if it is really needed
   get $style()		{ return this.__cache.style ? this.__cache.style : this.__cache.style = Styles(this) }
 
   get $selection()	{ this.$.value.substring(this.$.selectionStart, this.$.selectionEnd) }	// XXX TODO XXX $all
-  set $selection(v)	{ this.selection(s) }
+  set $selection(v)	{ this.selection(v) }
   // .selectionStart changes if .value is modified
-  selection(s)		{ const $ = this.$; const p = $.selectionStart; $.value = strsplice($.value,p,$.selectionEnd, s); $.selectionStart = $.selectionEnd = p; return this }	// XXX TODO XXX $all
+  selection(s)		{ const $ = this.$; const p = $.selectionStart; $.value = strsplice($.value,p,$.selectionEnd, s); $.selectionStart = $.selectionEnd = p; return this.mkev('cursor') }	// XXX TODO XXX $all
   // .selectionEnd may change if .selectionStart is modified
-  cursormove(delta)	{ const $ = this.$; const a = $.selectionStart; const b = $.selectionEnd; $.selectionStart = a+delta; $.selectionEnd = b+delta; return this }		// XXX TODO XXX $all
+  cursormove(delta)	{ const $ = this.$; const a = $.selectionStart; const b = $.selectionEnd; $.selectionStart = a+delta; $.selectionEnd = b+delta; return this.mkev('cursor') }		// XXX TODO XXX $all
   editval(s)		{ return this.selection(s).cursormove(s.length) }
 
   Dataset(d)		{ const a=this.__E.map(_ => _.dataset?.[d]).filter(_ => _); return a.length<2 ? a[0] : a }
@@ -1639,10 +1694,18 @@ class _E extends _E0
   checked(b)		{ this.$checked = b; return this }
   disabled(b)		{ this.$disabled = b; return this }
   align(a)		{ this.$align = a; return this }
-  center()		{ return this.align('center') }
+  center()		{ return this.align('center') }		// old align like .left().
   justify()		{ return this.align('justify') }
   left()		{ return this.align('left') }
   right()		{ return this.align('right') }
+  get aligncenter()	{ return this.align('center') }		// new align like .alignleft.
+  get alignend()	{ return this.align('end') }
+  get alignjustify()	{ return this.align('justify') }
+  get alignjustifyall()	{ return this.align('justify-all') }
+  get alignleft()	{ return this.align('left') }
+  get alignmatch()	{ return this.align('match-parent') }
+  get alignright()	{ return this.align('right') }
+  get alignstart()	{ return this.align('start') }
   // https://developer.mozilla.org/en-US/docs/Web/CSS/white-space
   // pre:	preserve,preserve,nowrap,preserve
   // nowrap:	collapse,collapse,nowrap,remove
@@ -1672,6 +1735,8 @@ class _E extends _E0
   get SPAN()		{ return this._MK('span') }
   get CHECKBOX()	{ return this._MK('input', {type:'checkbox'}) }
   get INPUT()		{ return this._MK('input', {type:'text'}) }
+  get NUMBER()		{ return this._MK('input', {type:'number',size:8}) }
+  get COLOR()		{ return this._MK('input', {type:'color'}) }
   get RADIO()		{ return this._MK('input', {type:'radio'}) }
   get TEXTAREA()	{ return this._MK('textarea') }
   get TABLE()		{ return this._MK('table') }
@@ -1683,6 +1748,7 @@ class _E extends _E0
   get IFRAME()		{ return this._MK('iframe') }
   get CANVAS()		{ return this._MK('canvas') }
 
+  urlstate(k)		{ return this.attr({'data-urlstate':k}) }
   get DL()		{ return this._MK('dl') }
   get DT()		{ return this._MK('dt') }
   get DD()		{ return this._MK('dd') }
@@ -1748,9 +1814,9 @@ class _E extends _E0
   img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }	// .img(url, function(args..) { this === E.IMG.src(src) }, args..)
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
-  tdl(...a)		{ for (const t of a) this.TD.attr({align:"left"}).text(t); return this }
-  tdr(...a)		{ for (const t of a) this.TD.attr({align:"right"}).text(t); return this }
-  tdc(...a)		{ for (const t of a) this.TD.attr({align:"center"}).text(t); return this }
+  tdl(...a)		{ for (const t of a) this.TD.alignleft.text(t); return this }
+  tdr(...a)		{ for (const t of a) this.TD.alignright.text(t); return this }
+  tdc(...a)		{ for (const t of a) this.TD.aligncenter.text(t); return this }
   li(...a)		{ for (const t of a) this.LI.text(t); return this }
   b(...a)		{ this.B.text(...a); return this }
   u(...a)		{ this.U.text(...a); return this }
@@ -1967,7 +2033,10 @@ const T = function (...s)	// needs a bound 'this'
           x	= `${e}`;
         }
         //if (x instanceof _E0 && x.$parent) x='';		// wrong hack, use T(_ => { _.DIV.text('hello') }) in that case!
-        return r[i].replaceWith(e.$all[i] = TT(x||'').$);	// XXX TODO XXX BUG should be $all
+        // XXX TODO XXX there should be some e.replace$(i, TT(x||'')) to do this:
+        const n = e.$all[i] = TT(x||'').$;
+        if (r[i] === E.$) E.__e = n;				// future BUG: fails when __e becomes #e
+        r[i].replaceWith(n);
       });
     return e;
   }
@@ -2644,6 +2713,16 @@ const UrlState = (x => x())(function(){
       dat.push('');
       return dat.join('#');
     }
+  let ass, rep;
+  const upd = once_per_ms(100,() =>
+    {
+      if (ass)
+        location.assign(ass);
+      ass	= void 0;
+      if (rep)
+        location.replace(rep);
+      rep	= void 0;
+    });
   function change(id,v)
     {
       if (id === void 0)
@@ -2659,7 +2738,8 @@ const UrlState = (x => x())(function(){
         {
           D('UrlState new', id, v, url)
 
-          location.assign(url);
+          ass = url;
+          rep = void 0;
           save	= 0;
           perm	= {};
           for (const a of keeper.states())
@@ -2668,8 +2748,9 @@ const UrlState = (x => x())(function(){
       else
         {
           D('UrlState tmp', id, v, url)
-          location.replace(url);
+          rep	= url;
         }
+      upd();
     }
   function init(_cookie)
     {
