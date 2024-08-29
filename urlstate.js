@@ -2,7 +2,32 @@
 
 // UrlState is a completely wrong hacky thing and should go away!
 //
-// The correct method is:
+// For now this here only is a step forward to separate the implementation from the use.
+// On each DOM element, define
+//	data-urlstate="id"
+// or
+//	data-urlstate
+// which takes the element's id (fallback to name).
+// On <input radio> you only need a single element.
+//
+// After that call
+//	UrlState.auto()
+//
+// DOM is not observed or live list, so elements showing up later are ignored.
+// For those you must run
+//	state=UrlState.ADD(E(element))
+// yourself.
+//
+// BLOBs like <textarea> are NOT supported with data-urlstate yet.
+//
+// Following elements are supported:
+//
+// <select>		-> take checked <option> (id || option.$value || option.$text)
+// <input text>		-> the text
+// <input radio>	-> the checked one
+// <input check>	-> the check state
+
+// The (future, not yet implemented) correct method is something like:
 //
 // - Define a special VALUE object which keeps a (possibly complex) value.
 //   - Best it is implemented as a Proxy with dictionary syntax.
@@ -60,7 +85,7 @@
 // - These callbacks can inspect the value, alter it or even revoke the change
 //   - Revocation is done by throwing
 //   - Accept means return undefined (=== void 0)
-//   - Changeing is done by returning something different
+//   - Changing is done by returning something different
 //
 // On top of that we then can implement VALUE-binding:
 // - The VALUE then can be bound to a DOM element
@@ -76,31 +101,6 @@
 //
 // And on top of that we than can re-implement automatic UrlState.
 // - We can then store big things like <textarea> into sessionstore/localstore/database as well
-
-// However: This all above is NOT the case today.
-// So this here is a step forward to separate the implementation from the use.
-// On each DOM element, define
-//	data-urlstate="id"
-// or
-//	data-urlstate
-// which takes the element's id (fallback to name).
-// On <input radio> you only need a single element.
-//
-// After that call UrlState.auto()
-//
-// DOM is not observed or live list, so elements showing up later are ignored.
-// For those you must run
-//	state=UrlState.ADD(E(element))
-// yourself.
-
-// BLOBs like <textarea> are NOT supported with data-urlstate yet.
-//
-// Following elements are supported:
-//
-// <select>		-> take checked <option> (id || option.$value || option.$text)
-// <input text>		-> the text
-// <input radio>	-> the checked one
-// <input check>	-> the check state
 
 Object.entries((()=>{
 
@@ -122,14 +122,16 @@ function getset(_)
         case 'checkbox':	return { get:()=>_.checked,	set:v=>_.checked=v };
 
         default:
-          console.warn('UrlState: treating like text: INPUT type', x.type, x);
+          console.warn('UrlState: treating like text: INPUT type', _.type, _);
+        case 'color':
+        case 'number':
         case 'text':
           break;
         }
     case 'SELECT':
       break;
     }
-  return { get:() => _.value, set:v => _.value=v };
+  return { get:() => _.value, set:v => console.log('SET', _.type, _.value=v) };
 }
 
 const known = new Set();
@@ -149,7 +151,7 @@ return (
 
 //      console.log('UrlState.ADD',id,e.$all,st);
       if (!known.has(e))
-        e.ON('change', _ => { st.state = getset(_.target).get() });
+        e.ON('change _value', _ => { st.state = getset(_.target).get() });
       known.add(e);
       return st;
     }
@@ -182,7 +184,7 @@ return (
     }
 
 // UrlState.auto(optionaldatasetname, optionalprefix)
-// datasetname defaults to
+// optionaldatasetname defaults to
 //	urlstate
 // giving data-urlstate for this here.
 // optionalprefix defaults to
