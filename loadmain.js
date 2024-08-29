@@ -17,6 +17,7 @@
 //
 // APP.js:
 //
+// 'use strict';
 // export class Main
 //   {
 //   constructor(_)
