@@ -1872,6 +1872,26 @@ class _E extends _E0
       return on.add(_ => { run(_); return prevent }).attach(this);
     }
   button(text,...a)	{ this.BUTTON.text(text).CLICK(...a); return this }
+  // checkbox([true|false|'title'], cb, args..)
+  // cb(args.., state, element)
+  checkbox(...a)
+    {
+      let fn, t, c;
+      while (a.length)
+        {
+          fn = a.shift();
+          if (isString(fn))
+            t	= fn;
+          else if (fn === true || fn === false)
+            c	= fn;
+        }
+      const _ = this.CHECKBOX.on('change', (e,_) => { fn(...a, _.$checked, _) });
+      if (t)
+        _.attr({title:t});
+      if (c !== void 0)
+        _.$checked = c;
+      return this;
+    }
 
   get $options()	{ return (function *() { for (const a of this.$.selectedOptions) yield E(a) }).call(this) }
   get $option()		{ return E(this.$?.selectedOptions[0]) }
