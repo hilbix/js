@@ -1888,8 +1888,8 @@ class _E extends _E0
       const _ = this.CHECKBOX.on('change', (e,_) => { fn(...a, _.$checked, _) });
       if (t)
         _.attr({title:t});
-      if (c !== void 0)
-        _.$checked = c;
+      if (c !== void 0)			// create synthetic event when state is initially set
+	fn(...a, c, _.checked(c));
       return this;
     }
 
