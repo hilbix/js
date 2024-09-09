@@ -249,6 +249,10 @@ const OBfix = o =>
 /* */ const PR = Promise.resolve();			// PRomise
 /* */ const PE = Promise.reject();			// PromisErr  WARNING: Only use PE instead of Promise.reject() if you want to suppress the "Uncaught in Promise" error by default!
 /* */ PE.catch(DONOTHING);				// shutup "Uncaught in Promise" due to PE
+/* */ // Tell error without sideeffects
+/* */ // try{..}catch(e){PErr(e)}
+/* */ // P.then(..).catch(PErr);
+/* */ const PErr = e=>{Promise.reject(e).catch(THROW)};	// unfortunately this does not give us the real error position, only where it is handled, but this is better than nothing
 /* */ const P = (fn,...a) => PR.then(() => fn(...a));	// invoke fn(a) in microtask: P(fn,a).then(..).catch(..). See also single_run()
 /* */ const P$ = (fn,self,...a) => P$$(fn,self,a);	// invoke fn(a) with this===self
 /* */ const P$$ = (fn,self,a) => PR.then(() => _FPA.call(fn, self, a));	// same as P$ but with arguments in array (for optimization)
@@ -1084,6 +1088,7 @@ class ON
 //            CONSOLE('prevent', this.__type);
             ev.stopPropagation();
             ev.preventDefault();
+            ev.stopImmediatePropagation();
             return false;
           }
       return true;
@@ -2138,7 +2143,7 @@ class Emit
         {
           try {
             if (!v({o:this,t,d})) return;
-          } catch (e) {CONSOLE(e)}
+          } catch (e) {PErr(e)}
           this.OFF(k);
         };
       this.__on['*'].forEach(emit);		// * receives all events
