@@ -119,8 +119,9 @@ export class DLP extends Emit
     }
   load(_)
     {
+      console.error('LOAD', _);
       this._Emit('load', _);
-      this.files(_.target.files);
+      this.files(_.target);
       return this;
     }
   paste(_)
