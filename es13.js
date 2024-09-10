@@ -2101,9 +2101,9 @@ const X = (...args) =>
 // Event emitter class:
 // reg = o.ON('ev1 ev2 ev3', fn)	// register events
 // o.OFF(reg)				// unregister
-// fn({o,t,d}) where o==instance, t=event, d=data depending on the event
-// if fn() returns truthy it is removed (from all events it is registered)
-// if fn() throws it is removed (from all events it is registered)
+// fn({o,t,d,x}) where o==instance, t=event, d=data, x=eXtended (argument array) depending on the event
+// if fn() returns truthy, it is removed (from all events it is registered)
+// if fn() throws, it is removed (from all events it is registered)
 class Emit
   {
   __on
@@ -2137,13 +2137,13 @@ class Emit
       if (id) id.forEach(_ => this.__on[_].delete(id));
       return this._Emit('OFF', {id})
     }
-  async _Emit(t, d)
+  async _Emit(t, d, ...x)
     {
       await void 0;				// run as microtask
       const emit = (v,k) =>
         {
           try {
-            if (!v({o:this,t,d})) return;
+            if (!v({o:this,t,d,x})) return;
           } catch (e) {PErr(e)}
           this.OFF(k);
         };
