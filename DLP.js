@@ -1,8 +1,10 @@
+'use strict';
 // Drop Load Paste
 //
 // Asynchronously load data into JavaScript.
 
-'use strict';
+// TODO:
+// - Support to drop strings as files instead as of string
 
 // const dlp = new DLP({drop,load,paste});
 //
