@@ -4,7 +4,7 @@
 // Asynchronously load data into JavaScript.
 
 // TODO:
-// - Support to drop strings as files instead as of string
+// - Better support to drop strings
 
 // const dlp = new DLP({drop,load,paste});
 //
@@ -126,20 +126,20 @@ export class DLP extends Emit
   drop(_)
     {
       this._Emit('drop', _);
-      this.items(_.dataTransfer);
+      this.items(_.dataTransfer, 'drop');
       return this;
     }
   input(_)
     {
       _ = E(_);
       this._Emit('input', _);
-      this.files(_.$);
+      this.files(_.$, 'input');
       return this;
     }
   load(_)
     {
       this._Emit('load', _);
-      this.files(_.target);
+      this.files(_.target, 'load');
       return this;
     }
   // XXX TODO XXX Also an die Paste-Events muss ich nochmals ran.
@@ -148,33 +148,35 @@ export class DLP extends Emit
   // Ist das ein Bug im FF oder schlichtweg Unkenntnis von mir wie man da an die "echt" Datei rankommen soll?
   // Liegt es vielleicht daran, dass ich den PASTE-Event beende (.stopPropagation()) und es käme sonst ein DROP-Event hinterher?
   // Wie auch immer, das braucht noch weitere (vermutlich glorios scheiternde) Tests usw. irgendwann in einer entfernten Zukunft
-  paste(_)
+  paste(_, mode)
     {
       this._Emit('paste', _);
 //      dump('e', _);
 //      dump('c', _.clipboardData);
-      this.items(_.clipboardData);
+      this.items(_.clipboardData, 'paste');
       return this;
     }
 
-  items(_)
+  items(_, mode)
     {
       let got;
       for (const i of _.items)
         {
-          this.item(i);
+          this.item(i, mode);
           got = 1;
         }
       if (!got)
         this._Emit('noitems', fix(_));
       return this;
     }
-  files(_)
+  files(_, mode)
     {
       let got;
       for (const i of _.files)
         {
-          this.file(i);
+	  const org	= fix(i);
+	  org.mode	= mode;
+          this.file(i, org);
           got = 1;
         }
       if (!got)
@@ -182,29 +184,40 @@ export class DLP extends Emit
       return this;
     }
 
-  item(_)
+  item(_, mode)
     {
       this._Emit('item', _);
       const org = fix(_);	// information no more available in Chrome after .getAsString() etc.  Is this a bug?!?
+      org.mode = mode;
       switch (_.kind)
         {
-        case 'string':	_.getAsString(s => this.string(s, org, org.type)); break;
+        case 'string':	_.getAsString(s => this.string(s, org)); break;
         case 'file':	this.file(_.getAsFile(), org); break;
         default:	this.unknown(_.kind, org); break;
         }
       return this;
     }
-  unknown(kind, _)
+  file(_, org)
     {
-      this._Emit('unknown', kind, _);
+      this._Emit('file', _, org);
     }
-  string(s, _)
+  unknown(kind, org)
     {
-      this._Emit('string', s, _);
+      this._Emit('unknown', kind, org);
     }
-  file(_)
+  string(s, org)
     {
-      this._Emit('file', _);
+      this._Emit('string', s, org);
+    }
+  stringToFile(_)
+    {
+      // XXX TODO XXX try to be a bit more clever on string content
+      const x0		= _.x[0] ?? {};
+      const type	= x0.type ?? 'text/plain';
+      const mode	= x0.mode ?? 'data';
+      const c		= SHA256.sha256(_.d);		// needs cry/sha256c.js (or ES6 cry/sha256.js)
+      const b		= new Blob([_.d], {type});
+      return new File([b], `~${c}.${mode}`, {type});
     }
   };
 
