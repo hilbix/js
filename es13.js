@@ -1722,6 +1722,16 @@ class _E extends _E0
   ws(x)			{ return this.style({ whiteSpace:x }) }
   nobr(...a)		{ return this.ws('nowrap').text(...a) }
   pre(...a)		{ return a.length ? ( this.PRE.text(...a), this ) : this.ws('pre') }
+  // font shortcuts:
+  get fontcap()		{ return this.font('caption') }
+  get fonticn()		{ return this.font('icon') }
+  get fontmnu()		{ return this.font('menu') }
+  get fontmb()		{ return this.font('message-box') }
+  get fontsc()		{ return this.font('small-caption') }
+  get fontsb()		{ return this.font('status-bar') }
+  // TODO permit object { style, variant, weight, size, height, stretch, family }
+  font(font)		{ return this.style({ font }) }
+  // TODO fam: serif sans-serif monospace cursive fantasy system-ui ui-serif ui-sans-serif ui-monospace ui-rounded emoji math fangsong
 
   // All TAGs (lowercase: includes .$$)
   get DIV()		{ return this._MK('div') }
