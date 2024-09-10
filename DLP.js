@@ -33,21 +33,10 @@ export class DLP extends Emit
   set_drop(e)
     {
       if (!e) return;
-      if (e instanceof _E0)
-        e	= e.$;
-      this.#drop = e;
-      ['dragover','dragenter','dragleave','drop'].forEach(_ =>
-        {
-          const fn = this[_].bind(this);
-          e.addEventListener(_, _ =>
-            {
-              _.stopPropagation();
-              _.preventDefault();
-              _.stopImmediatePropagation();
-              fn(_);
-              return false;
-            }, {capture:true});
-        });
+      e = E(e);
+      this.#drop = e = E(e);
+      // there must be a better way .. somehow .. in future
+      ['dragover','dragenter','dragleave','drop'].forEach(_ => e.ON(_, this[_].bind(this)));
       return this;
     }
   set_load(e)
@@ -117,9 +106,15 @@ export class DLP extends Emit
       this.items(_.dataTransfer);
       return this;
     }
+  input(_)
+    {
+      _ = E(_);
+      this._Emit('input', _);
+      this.files(_.$);
+      return this;
+    }
   load(_)
     {
-      console.error('LOAD', _);
       this._Emit('load', _);
       this.files(_.target);
       return this;
