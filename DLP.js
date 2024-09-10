@@ -186,7 +186,7 @@ export class DLP extends Emit
       const org = fix(_);	// information no more available in Chrome after .getAsString() etc.  Is this a bug?!?
       switch (_.kind)
         {
-        case 'string':	_.getAsString(s => this.string(s, org)); break;
+        case 'string':	_.getAsString(s => this.string(s, org, org.type)); break;
         case 'file':	this.file(_.getAsFile(), org); break;
         default:	this.unknown(_.kind, org); break;
         }
