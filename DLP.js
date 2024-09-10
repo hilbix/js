@@ -15,6 +15,20 @@
 //	dlp.ON('data', data => { // process data
 // or TBD.
 
+// Workaround for what I consider being a browser bug plus a very bad design of ES13 (things not being visible)
+function fix(o)
+{
+  const r = {};
+  const set = (k,v) => r[k]=v;
+  const add = _ => { const v=o[_]; v===void 0 || set(_,v) };
+  const key = _ => _ && Reflect.ownKeys(_).forEach(add);
+
+//  'kind type'.split(' ').forEach(add);
+  key(Reflect.getPrototypeOf(o));
+  key(o);
+  return r;
+}
+
 export class DLP extends Emit
   {
   #drop;
@@ -23,7 +37,7 @@ export class DLP extends Emit
 
   constructor(dlp)
     {
-      super('over enter leave drop load paste noitems nofiles item file unknown string');
+      super('over enter leave drop load paste input noitems nofiles item file unknown string');
       dlp ??= {};
       this.set_drop(dlp.drop ?? window);
       this.set_load(dlp.load);
@@ -135,7 +149,7 @@ export class DLP extends Emit
           got = 1;
         }
       if (!got)
-        this._Emit('noitems');
+        this._Emit('noitems', fix(_));
       return this;
     }
   files(_)
@@ -147,28 +161,29 @@ export class DLP extends Emit
           got = 1;
         }
       if (!got)
-        this._Emit('nofiles');
+        this._Emit('nofiles', fix(_));
       return this;
     }
 
   item(_)
     {
       this._Emit('item', _);
+      const org = fix(_);	// information no more available in Chrome after .getAsString() etc.  Is this a bug?!?
       switch (_.kind)
         {
-        case 'string':	_.getAsString((..._) => this.string(_)); break;
-        case 'file':	this.file(_.getAsFile()); break;
-        default:	this.unknown(_.kind, _.type); break;
+        case 'string':	_.getAsString(s => this.string(s, org)); break;
+        case 'file':	this.file(_.getAsFile(), org); break;
+        default:	this.unknown(_.kind, org); break;
         }
       return this;
     }
-  unknown(kind, type)
+  unknown(kind, _)
     {
-      this._Emit('unknown', {kind,type});
+      this._Emit('unknown', kind, _);
     }
-  string(_)
+  string(s, _)
     {
-      this._Emit('string', _);
+      this._Emit('string', s, _);
     }
   file(_)
     {
