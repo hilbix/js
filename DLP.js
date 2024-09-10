@@ -15,6 +15,13 @@
 //	dlp.ON('data', data => { // process data
 // or TBD.
 
+function dump(w,o)
+{
+  const dump = (x,_) => _ && Reflect.ownKeys(_).forEach(_ => console.log('DUMP', w, x, _, o[_]));
+  dump('p', Reflect.getPrototypeOf(o));
+  dump('o', o);
+}
+
 // Workaround for what I consider being a browser bug plus a very bad design of ES13 (things not being visible)
 function fix(o)
 {
@@ -41,7 +48,7 @@ export class DLP extends Emit
       dlp ??= {};
       this.set_drop(dlp.drop ?? window);
       this.set_load(dlp.load);
-      this.set_paste(dlp.paste ?? document.body);
+      this.set_paste(dlp.paste ?? dlp.drop ?? window);
     }
 
   set_drop(e)
@@ -133,9 +140,17 @@ export class DLP extends Emit
       this.files(_.target);
       return this;
     }
+  // XXX TODO XXX Also an die Paste-Events muss ich nochmals ran.
+  // Bei Chrome kann man (unter Linux) eine Datei pasten.  So wie ich das erwarte.  Ist aber ein DROP-Event, kein PASTE event.
+  // Bei Firefox kommt aber (unter Linux) stattdessen der Dateiname als String.
+  // Ist das ein Bug im FF oder schlichtweg Unkenntnis von mir wie man da an die "echt" Datei rankommen soll?
+  // Liegt es vielleicht daran, dass ich den PASTE-Event beende (.stopPropagation()) und es käme sonst ein DROP-Event hinterher?
+  // Wie auch immer, das braucht noch weitere (vermutlich glorios scheiternde) Tests usw. irgendwann in einer entfernten Zukunft
   paste(_)
     {
       this._Emit('paste', _);
+//      dump('e', _);
+//      dump('c', _.clipboardData);
       this.items(_.clipboardData);
       return this;
     }
