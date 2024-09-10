@@ -2148,7 +2148,11 @@ class Emit
           this.OFF(k);
         };
       this.__on['*'].forEach(emit);		// * receives all events
-      this.__on[t].forEach(emit);		// send to the given event functions
+      try {
+        this.__on[t].forEach(emit);		// send to the given event functions
+      } catch (e) {
+        console.error(`BUG: misspelled event '${t}' (or missing in ${this.constructor.name} constructor/super call):`, e);
+      }
     }
   };
 
