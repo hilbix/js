@@ -2003,11 +2003,12 @@ const E = (function(){
 
       if (e instanceof _E0) return e;
       if (isString(e)) e = document.getElementById(e);
-      if (!e || !(e instanceof Node))
-        {
-          console.error('E called with invalid object', a);
-          return e;
-        }
+      if (e !== window)
+        if (!e || !(e instanceof Node))
+          {
+            console.error('E called with invalid object', a);
+            return e;
+          }
 
       let w = weak_refs.get(e);
       if (w) { w = w.deref(); if (w) return w }	// w is WeakRef
