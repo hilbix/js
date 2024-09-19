@@ -1962,6 +1962,7 @@ class _E extends _E0
   id(id)		{ return this.attr({id}) }
   name(name)		{ return this.attr({name}) }	// See Callable hack why 'name' works here
   title(title)		{ return this.attr({title}) }
+  placeholder(placeholder) { return this.attr({placeholder}) }
 
   // .attr({attr:val}) to set DOM attribute on TAG
   // .attr({attr:void 0}) removes DOM attr again
