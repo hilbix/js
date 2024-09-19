@@ -1350,21 +1350,48 @@ const FRAGMENT = () => document.createDocumentFragment();
 
 // https://hackernoon.com/creating-callable-objects-in-javascript-d21l3te1
 // I learned that CSP forbids `super('string')`, too.  Hence this is unusable.
-class Callable extends Function
+/*
+class Callable_ extends Function
   {
   constructor()
     {
+      // Also we cannot use super():
       // DOES NOT WORK: super('...args', 'return this._bound._call(...args)');
-      //this._bound = this.bind(this);
-      //return this._bound;
+      //	this._bound = this.bind(this);
+      //	return this._bound;
       // Proxy() cannot be used, as it requires super() which is blocked, too.
-      // DOES NOT WORK: super();
-      // return new Proxy(this, { apply: (t,s,a) => t._call(...a)});	// I don't like it
+      // DOES NOT WORK as we need to call super() before using Proxy like this:
+      //	return new Proxy(this, { apply: (t,s,a) => t._call(...a)});	// I don't like it anyway
       const fn = function(...a) { return fn._call(...a) }
       return Object.setPrototypeOf(fn, new.target.prototype);	// SLOW AS HELL
     }
   // _call(...a) { .. } must be implemented in subclass
   };
+
+// Too ugly to rewrite name_ to name
+class Callable_ extends Callable
+  {
+  constructor()
+    {
+      super();
+      Object.defineProperty(this,'name',{writable:true, value:this.name_});
+    }
+  // use name_ instead of name
+  // _call(...a) { .. } must be implemented in subclass
+  };
+*/
+// Better approach:
+// Manually create the class and explicitly take over the `name` property
+// (and in future perhaps others), which is ugly as well, but much more convenient:
+function Callable()	// typeof Callable === 'function'
+{
+  const fn = function(...a) { return fn._call(...a) }
+  const self = Object.setPrototypeOf(fn, this.constructor.prototype);	// SLOW AS HELL
+  Object.defineProperty(fn,'name',{writable:true,value:this.name});	// hack to take over name and make it writable
+  return self;
+}
+Callable.prototype = Object.create(Function.prototype);
+// console.log('Callable:', typeof Callable); // => 'function' as wanted!
 
 // This is an element wrapper (not really like jQuery).
 // const input = E().DIV.text('hello world ').INPUT;
@@ -1764,6 +1791,7 @@ class _E extends _E0
   get CANVAS()		{ return this._MK('canvas') }
 
   urlstate(k)		{ return this.attr({'data-urlstate':k}) }
+
   get DL()		{ return this._MK('dl') }
   get DT()		{ return this._MK('dt') }
   get DD()		{ return this._MK('dd') }
@@ -1846,6 +1874,8 @@ class _E extends _E0
   h5(...a)		{ this.H5.text(...a); return this }
   h6(...a)		{ this.H6.text(...a); return this }
   div(...a)		{ this.DIV.text(...a); return this }
+  radio(k,v,t,fn,...a)	{ this.LABEL.RADIO.name(k).value(v).on('change', fn,...a).$$.text(t); return this }
+
   // generic click() function:  call of fn DIFFERS FROM .on('click', fn, args..)!
   // e.click(fn, args..)	// calls fn(args.., event, e, on-instance) with this bound to e
   // click('mod', fn, args..)	// calls mod(true), fn(), mod(false)
@@ -1928,7 +1958,7 @@ class _E extends _E0
   rel(rel)		{ return rel === true ? this : this.attr({rel:(rel === void 0 || rel === false ? 'noreferrer noopener' : rel)}) }
   href(href)		{ return this.attr({href}) }
   id(id)		{ return this.attr({id}) }
-  name(name)		{ return this.attr({name}) }
+  name(name)		{ return this.attr({name}) }	// See Callable hack why 'name' works here
   title(title)		{ return this.attr({title}) }
 
   // .attr({attr:val}) to set DOM attribute on TAG
