@@ -1714,12 +1714,14 @@ class _E extends _E0
           this.TEXT(a);
       return this;
     }
-  ctext(...s)		{ return this.center().text(...s) }
-  ltext(...s)		{ return this.left().text(...s) }
-  jtext(...s)		{ return this.justify().text(...s) }
+  ctext(...s)		{ return this.aligncenter.text(...s) }
+  etext(...s)		{ return this.alignend.text(...s) }
+  stext(...s)		{ return this.alignstart.text(...s) }
+  ltext(...s)		{ return this.alignleft.text(...s) }
+  rtext(...s)		{ return this.alignright.text(...s) }
+  jtext(...s)		{ return this.alignjustify.text(...s) }
   ntext(...s)		{ return this.nobr().text(...s) }
   ptext(...s)		{ return this.pre().text(...s) }
-  rtext(...s)		{ return this.right().text(...s) }
   value(...s)		{ this.$value = s.join(' '); return this }
   src(s)		{ this.$src = s; return this }
   alt(...s)		{ this.$alt = s.join(' '); return this }
