@@ -88,6 +88,7 @@ export class DLP extends Emit
       this._Emit('enter', _);
       return this;
 
+/*
       if (this.tmp && _ === this.tmp) return;
       if (this.tmp) this.leave();
       const d = this.tmp = this.ev(E.TEXTAREA.style({position:'absolute',display:'block',opacity:0.5,background:'#888',zIndex:9999,border:'1px solid red',top:0,bottom:0,left:0,right:0}).attr({placeholder:'DROP HERE'}));
@@ -101,12 +102,13 @@ export class DLP extends Emit
 //      console.log('Dx', r, d.$xywh);
 
       return this;
+*/
     }
   dragleave(_)
     {
       this._Emit('leave', _);
       return this;
-
+/*
       let v;
       if (this.tmp)
         {
@@ -119,6 +121,7 @@ export class DLP extends Emit
       return v;
 
       return this;
+*/
     }
 
   // We must process this immediately, as all information vanishes as soon as the event callback returns.
