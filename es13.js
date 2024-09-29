@@ -1621,8 +1621,8 @@ class _E extends _E0
   get $y()		{ return this._pos().y }
   get $w()		{ return this.$.offsetWidth }
   get $h()		{ return this.$.offsetHeight }
-  get $r()		{ return this.pos().x + this.$.offsetWidth }
-  get $b()		{ return this.pos().y + this.$.offsetHeight }
+  get $r()		{ return this._pos().x + this.$.offsetWidth }
+  get $b()		{ return this._pos().y + this.$.offsetHeight }
   x(x)			{ return this.style({left:`${x}px`}) }
   y(y)			{ return this.style({top:`${y}px`}) }
   w(_)			{ const w=`${_}px`; return this.style({width:w,maxWidth:w}) }
