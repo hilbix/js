@@ -4,6 +4,9 @@
 
 // TODO:
 //
+// - Allow this to be loaded as Module, too.
+// - Better Worker support.
+//
 // Proper debug sealing.  Wrong usage must be reported via throw.
 //
 //	Object.seal() and Object.freeze() fail for debugging,
@@ -19,9 +22,9 @@
 //	WTF?  How to implement this properly then?
 //	I thought it was meant for exactly that case!
 //
-// Implement private fields (when they become available?)
+// Implement private fields (.. perhaps ..)
 //
-//	Currently stuidly emulated with _
+//	Currently stupidly emulated with __
 //	Can we use WeakMap()[this] instead?  Easily?
 //	(I did so in some other universe already.)
 
@@ -46,6 +49,12 @@ try { // Else workers die if you try to access 'document', which is plain bullsh
 /* */ var DEBUGGING = this?.DEBUGGING || document?.currentScript?.dataset?.debug;	// you can change this later
 } catch {};
 
+const knownNameSpaces =
+  { "http://www.w3.org/1999/xhtml":[]		// mainly used for this
+  , "http://www.w3.org/2000/svg":[]		// incomplete
+  , "http://www.w3.org/1998/Math/MathML":void 0	// not handled for now
+  };
+
 /* */ const DispatchEvent = async e => await window.dispatchEvent(e);			// do it asynchronously to not stop execution
 /* */ const _FPA = Function.prototype.apply;						// _FPA.call(fn,THIS,[args..])
 /*_*/ const _FPC = Function.prototype.call;						// _FPC.call(fn,THIS,args..)
@@ -57,8 +66,8 @@ try { // Else workers die if you try to access 'document', which is plain bullsh
 
 /* */ const AsyncFun = Object.getPrototypeOf(async function(){}).constructor;
 /* */ const C = (fn,...a) => function (...b) { return _FPC.call(fn,this,...a,...b) }	// Curry (allows to bind this)
-/* */ const C$ = (fn,self,...a) => C$$(fn,self,a);					// Curry Call (with self)
-/* */ const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);		// Curry Apply (with self)
+/* */ const C$ = (fn,self,...a) => C$$(fn,self,a);					// Curry call (with self)
+/* */ const C$$ = (fn,self,a) => (...b) => _FPC.call(fn,self,...a,...b);		// Curry apply (with self)
 
 /* */ const CA = C$$, CC = C$;	// deprecated
 
@@ -1393,11 +1402,23 @@ function Callable()	// typeof Callable === 'function'
 Callable.prototype = Object.create(Function.prototype);
 // console.log('Callable:', typeof Callable); // => 'function' as wanted!
 
+// returns:
+// - the call to a function, if it is callable.
+// - the element, if it is an element _E0 and has no args (else it calls the element!)
+// - else the first argument (possibly ignoring others)
+// BUGS:
+// - should be able to add more exclusions like _E0 here
+// - in the degenerated case when a.length>0 it should return an array from all args, instead instead of ignoring ...a
+const CALL	= (fn, ...a) =>	!fn || !fn.call || (fn instanceof _E0 && !a.length) ? fn : fn.call(this,...a);
+const Call	= async (...a) => { const c = []; for (const _ of a) c.push(await a); return _CALL(...c) }	// async CALL awaiting args
+
 // This is an element wrapper (not really like jQuery).
 // const input = E().DIV.text('hello world ').INPUT;
 class _E0 extends Callable
   {
-  __e; __E = []; __d		// when renaming __E, do not miss reference in definition of 'const E' below!
+  // when renaming __E, do not miss reference in definition of 'const E' below!
+  __e; __E = [];	// __e === __E[0] unless __e is FRAGMENT, then __E == []
+  __d;			// Additional Userdata
   CATCH = CATCH		// trick to set this on call
 
   constructor(e)	{ super(); this.__e = (this.__E = e ? mkArr(e) : [])[0] || FRAGMENT() }
@@ -1413,9 +1434,10 @@ class _E0 extends Callable
       this.$.dispatchEvent(new CustomEvent(`_${_}`, { detail:this }));
     });
 
-  CHAIN(fn, ...a)	{ return E0(!fn || !fn.call || (fn instanceof _E0 && !a.length) ? fn : fn.call(this,...a)) }
-  chain(...a)		{ return this.CHAIN(...a) || this }
-  // chain(fn, args..) is like run(fn, args) but also allows chain(E()) or chain()
+  CHAIN(...a)		{ return E0(CALL(...a)) }		// can return void 0
+  chain(...a)		{ return this.CHAIN(...a) || this }	// WARNING: this can be modified with a function!
+  // chain(fn, args..) is like run(fn, args) but also allows chain(E()) or chain() or something like that
+  async Chain(...a)	{ return E0(await Call(...a)) }		// async variant
 
   get $data()		{ return this.__d || (this.__d = {}); }
   data(x,y)		{ this.$data[x]=y; return this }
@@ -1724,6 +1746,15 @@ class _E extends _E0
   ptext(...s)		{ return this.pre().text(...s) }
   value(...s)		{ this.$value = s.join(' '); return this }
   src(s)		{ this.$src = s; return this }
+  asrc(...a)		{ this.Srcblob(...a); return this }	// sets .src in background!
+  async Asrc(...a)	// sets .src() from something asynchronously, returning the new .src as a promise
+    {
+      const b = await Call(...a);
+      if (isString(b))
+        return this.$src = b;
+      const o = createObjectURL();
+    }
+
   alt(...s)		{ this.$alt = s.join(' '); return this }
   checked(b)		{ this.$checked = b; return this }
   disabled(b)		{ this.$disabled = b; return this }
@@ -1791,6 +1822,11 @@ class _E extends _E0
   get LABEL()		{ return this._MK('label') }
   get IFRAME()		{ return this._MK('iframe') }
   get CANVAS()		{ return this._MK('canvas') }
+  get SVG()		{ return this._MK(() => createElementNS('http://www.w3.org/2000/svg', 'svg')
+                                         , {'xmlns:xlink':'http://www.w3.org/1999/xlink'}
+                                         // .attr({width:100, height:100, viewBox:'x y w h'?
+                                         )
+                        }
 
   urlstate(k)		{ return this.attr({'data-urlstate':k}) }
 
@@ -1856,7 +1892,9 @@ class _E extends _E0
   // a(url,text,[target],true)	possibly targeted link (with referrer and opener)
   // a(url,text,[target],"rel")	possibly targeted link with given rel
   a(url,text,trg,rel)	{ this.A.href(url).text(text).if$(trg!==void 0, this.target, trg).if$(trg!==void 0||rel!==void 0, this.rel, rel!==void 0 ? rel : trg===true); return this }
-  img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }	// .img(url, function(args..) { this === E.IMG.src(src) }, args..)
+  // img(url|blob)
+  // img(url|blob, fn, args..)	calls fn(rgs.., IMGelement)
+  img(src, ...a)	{ this.CHAIN(...a,this.IMG.srcblob(src)); return this }	// .img(url, function(args..) { this === E.IMG.src(src) }, args..)
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
   tdl(...a)		{ for (const t of a) this.TD.alignleft.text(t); return this }
@@ -2117,8 +2155,9 @@ const T = function (...s)	// needs a bound 'this'
 
 // Create DOM Elements wrapped in class _E
 // X('div') creates a DIV (compare E.DIV)
-// X('div', 'br', 'span') creates three elements in E(), where .$ is the 'div'
-// X(['ul', ['li', 'br', 'span'
+// X('div', 'br', 'span') create three elements in E(), where .$ is the 'div'
+// X(['ul', ['li', 'br', 'span']]) create <ul><li/><br/><span/></ul>	(probably wrong!)
+// X(['ul', ['li', ['br', 'span']]]) create <ul><li><br/><span/><li/></ul> (probably what you want)
 const X = (...args) =>
   {
     const has = new Set();
@@ -2128,7 +2167,9 @@ const X = (...args) =>
       {
         if (has.has(_))	return;				// avoid infinite recursion
         has.add(_);
-//        if (_[0] instanceof Function)
+        const fn	= _[0];
+        if (isFunction(fn) && !(fn instanceof _E0))
+          _	= [fn(..._.slice(1))];			// allows to call CreateElementNS
         for (const e of _)
           {
             if (isArray(e))
@@ -3239,7 +3280,21 @@ const AsyncActionQueue = () =>
 // h	full height
 // x	usable width (margin subtracted)
 // y	usable height
-// currently cbs cannot be removed anymore
+// currently cbs cannot be removed, perhaps this will be implemented in future
+//
+// XXX TODO XXX somehow prevent resize loops
+// (things jumping forth and back due to scrollbars)
+//
+// This perhaps can be observed when a resize comes in while q.run() ran.
+// which means a resize happened while it resized.
+// This can happen because the user quickly changes window size.
+// So we should not only watch out for the usable area but also for the complete area.
+//
+// https://developer.mozilla.org/en-US/docs/Web/API/Window/innerWidth
+/*
+   console.log('Window', window.innerWidth, window.innerHeight);					// includes scrollbars
+   console.log('HTML', document.documentElement.clientWidth, document.documentElement.clientHeight);	// excludes scrollbars
+*/
 const onResize = (_=>_())(() =>
   {
     let q, b, wh, o;
@@ -3251,7 +3306,7 @@ const onResize = (_=>_())(() =>
         const x = b.offsetWidth;
         const y = h - parseInt(br.marginTop) - parseInt(br.marginBottom);
         if (x === o.x && y === o.y && w === o.w && h === o.h) return;
-        return o = { x,y,w,h };	// computed new usabe and full size
+        return o = { x,y,w,h };	// computed new usable full size
       };
     // Newly delivered resize events are delayed if a callback still is active.
     // This circumvents the lack of Promises() not being cancelable in JS.
@@ -3261,7 +3316,7 @@ const onResize = (_=>_())(() =>
         // Watch out for resizes
         const r	= new ResizeObserver(_ =>
           {
-            if (!get()) return;
+            if (!get()) return;	// no change in size
 //            console.log('RESIZE', _, wh.$w, wh.$h);
             q.run(o);
           });
