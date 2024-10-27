@@ -49,6 +49,19 @@ try { // Else workers die if you try to access 'document', which is plain bullsh
 /* */ var DEBUGGING = this?.DEBUGGING || document?.currentScript?.dataset?.debug;	// you can change this later
 } catch {};
 
+// Following allows to test syntax with NodeJS (we are not compatible to NodeJS as this is very DOM centric): js es13.js
+// BrowserCompat(replacement,({window, document, ErrorEvent}) => { return .. })	// calls function with replacement-object when window etc. not available
+// BrowserCompat(false, fn)	// returns a throwing function if not in a browser
+function BrowserCompat(o, _)
+{
+  try {
+    _({window, document, ErrorEvent});				// throws when these 3 are not available
+  } catch (e) {
+//    console.error(e);
+    return o === false ? (() => { THROW('needs a browser') }) : _(o);	// replacement in case above throws
+  }
+}
+
 const knownNameSpaces =
   { "http://www.w3.org/1999/xhtml":[]		// mainly used for this
   , "http://www.w3.org/2000/svg":[]		// incomplete
@@ -88,7 +101,7 @@ const knownNameSpaces =
 
       //v defArr
       //^ DEPRECATED
-/* */ const DomReady	= new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok());
+      //v DomReady
       //^ DONOTHING
       //v E
       //v Fetch FetchProgress fetchProgress
@@ -251,7 +264,7 @@ const OBfix = o =>
 // everything else is too browser specific
 //
 // Promise.reject('throw').catch(THROW).catch(e => bug(e.message, e.stack))
-/* */ const THROW = e => { e = e instanceof Error ? e : e instanceof ErrorEvent ? new Error(e.message, e.filename, e.lineno, e.colno) : new Error(e); D('ERROR', e); throw e }
+/* */ const THROW = BrowserCompat({ErrorEvent:Event}, ({ErrorEvent}) => e => { e = e instanceof Error ? e : e instanceof ErrorEvent ? new Error(e.message, e.filename, e.lineno, e.colno) : new Error(e); D('ERROR', e); throw e });
 
       // P(fn, args) is short for: new Promise((ok,ko) => { try { ok(fn(args)) } catch (e) { ko(e) })
 /* */ const PO = () => { const o={}; o.p = new Promise((ok,ko) => { o.ok=ok; o.ko=ko }); return o }	// PromiseObject
@@ -282,6 +295,8 @@ const Ptimeout = (ms, ...prom) =>
     return Promise.race(prom);		// Reject after timeout
   };
 // //e
+
+/* */ const DomReady	= BrowserCompat( {}, ({document}) => document ? new Promise(ok => document.readyState==='loading' ? document.addEventListener('DOMContentLoaded', ok) : ok()) : PE );
 
 /* */ const fromJ	= s => OBfix(JSON.parse(s));	// false === 'constructor' in fromJ('{}')
 /* */ const toJ		= o => JSON.stringify(o);
@@ -2483,17 +2498,17 @@ const arrayCmpShallow = (a,b) =>
 // u8 can be Uint8Array or ArrayBuffer/ArrayBufferView
 // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array/Uint8Array
-const SHA256u8hex = async (u8) => window.crypto?.subtle
+const SHA256u8hex = BrowserCompat({window:{}}, ({window}) => async (u8) => window.crypto?.subtle
     ? Array
       .from(new Uint8Array(await crypto.subtle.digest('SHA-256', u8)), b => b.toString(16).padStart(2, '0'))
       .join('')
-    : THROW('window.crypto.subtle not available');
+    : THROW('window.crypto.subtle not available'));
 
 // WTF https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
 const SHA256hex = (message) => SHA256u8hex(new TextEncoder().encode(message));
 
 SHA256hex('hw')
-.then(_ => '91660cd41bd4fe159351ab036b7ca3e998602a9fec70b362ca11e0177fe706e3' == _)
+.then(_ => '91660cd41bd4fe159351ab036b7ca3e998602a9fec70b362ca11e0177fe706e3' === _)
 .then(_ => _ ? _ : THROW('SHA256 testvalue failed'))
 .then(_ => console.log('SHA256 ok'), _ => console.log('SHA256 unavailable', _));
 
@@ -2635,7 +2650,7 @@ class Cookie extends OnOff
       //this.$httponly	= opt.httponly;
       this.$domain	= opt.domain;
       this.$expire	= opt.expire;
-      this.$secure	= opt.secure || location.protocol === 'https:';
+      this.$secure	= opt.secure || window.location.protocol === 'https:';
 
       // get the current value
       this._val		= void 0;
@@ -2795,7 +2810,7 @@ class Switch extends OnOff
   };
 */
 
-const UrlState = (x => x())(function(){
+const UrlState = BrowserCompat(false, ({window}) => {
   let reg;
   let perm;
   let save;
@@ -2837,10 +2852,10 @@ const UrlState = (x => x())(function(){
   const upd = once_per_ms(100,() =>
     {
       if (ass)
-        location.assign(ass);
+        window.location.assign(ass);
       ass	= void 0;
       if (rep)
-        location.replace(rep);
+        window.location.replace(rep);
       rep	= void 0;
     });
   function change(id,v)
@@ -2852,7 +2867,7 @@ const UrlState = (x => x())(function(){
           return;
         }
 
-      const url = state(location.href.split('#',1).shift());
+      const url = state(window.location.href.split('#',1).shift());
 
       if (save)
         {
@@ -2883,7 +2898,7 @@ const UrlState = (x => x())(function(){
 
       if (cookie)
         parse(set, cookie.$ || '');
-      parse(set, location.hash);
+      parse(set, window.location.hash);
 
       keeper = new Keeper(set, change);
     }
