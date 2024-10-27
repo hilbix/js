@@ -2635,7 +2635,7 @@ class Cookie extends OnOff
       //this.$httponly	= opt.httponly;
       this.$domain	= opt.domain;
       this.$expire	= opt.expire;
-      this.$secure	= opt.secure || location.protocol == 'https:';
+      this.$secure	= opt.secure || location.protocol === 'https:';
 
       // get the current value
       this._val		= void 0;
