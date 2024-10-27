@@ -126,8 +126,9 @@ const GetKeyCode = e =>
 /* */ const isArray	= Array.isArray;
 /* */ const isFunction	= f => typeof f === 'function';			// https://stackoverflow.com/a/6000009
 /* */ const isInt	= i => Number.isInteger(i);
-/* */ const isObject	= o => typeof o === 'object' && (Object.getPrototypeOf(o || []) || Object.prototype) === Object.prototype;	// fixed.  Following fails for OB(): https://stackoverflow.com/posts/comments/52802545
-/* */ const isObjectOrNull = o => typeof o === 'object' && (Object.getPrototypeOf(o || {}) || Object.prototype) === Object.prototype;
+/* */ const isObject	= o => typeof o === 'object' && (Object.getPrototypeOf(o || 0) || Object.prototype) === Object.prototype;	// fixed.  Following fails for OB(): https://stackoverflow.com/posts/comments/52802545
+/* */ const isObjectOrNull = o => isObject(o ?? {});			// OB() or {} or null or void 0, but not 0 nor '' nor false nor Array
+/* */ const isObjectOrFalse = o => isObject(o || {});			// OB() or {} or null or void 0 or 0 or '' or false, but not Array
 /* */ const isString	= s => s?.constructor === String;		// https://stackoverflow.com/a/63945948
 // Relative speeds tested with Chrome 95 in percent:
 // 'str' 1 (new String)
