@@ -55,7 +55,7 @@ try { // Else workers die if you try to access 'document', which is plain bullsh
 function BrowserCompat(o, _)
 {
   try {
-    _({window, document, ErrorEvent});				// throws when these 3 are not available
+    return _({window, document, ErrorEvent});				// throws when these 3 are not available
   } catch (e) {
 //    console.error(e);
     return o === false ? (() => { THROW('needs a browser') }) : _(o);	// replacement in case above throws
