@@ -91,7 +91,7 @@ const knownNameSpaces =
       //^ CONSOLE
 
 /* */ //const CT = (fn,...a) => CA(fn,this,a)				// instead use: C(this.fn,a) or CC(fn,this)
-/* */ const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;
+/* */ const D = (...a) => DEBUGGING ? CONSOLE('DEBUG', ...a) : void 0;	// see also ed13.js
 /* */ const DD = (...a) => DEBUGGING ? C(D,...a) : DONOTHING		// log = DD('err in xxx'); log('whatever')
 
 /* */ // mapSet(map,k,v)		map.set(k,v) which returns the value
