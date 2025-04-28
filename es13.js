@@ -1450,6 +1450,8 @@ class _E0 extends Callable
       this.$.dispatchEvent(new CustomEvent(`_${_}`, { detail:this }));
     });
 
+  EVAL(v)		{ return v instanceof _E0 || !isFunction(v) ? v : v(this) }
+
   CHAIN(...a)		{ return E0(CALL(...a)) }		// can return void 0
   chain(...a)		{ return this.CHAIN(...a) || this }	// WARNING: this can be modified with a function!
   // chain(fn, args..) is like run(fn, args) but also allows chain(E()) or chain() or something like that
@@ -2014,7 +2016,7 @@ class _E extends _E0
   rel(rel)		{ return rel === true ? this : this.attr({rel:(rel === void 0 || rel === false ? 'noreferrer noopener' : rel)}) }
   href(href)		{ return this.attr({href}) }
   id(id)		{ return this.attr({id}) }
-  name(name)		{ return this.attr({name}) }	// See Callable hack why 'name' works here
+  name(name)		{ name = this.EVAL(name); return this.attr({name}) }	// See Callable hack why 'name' works here
   title(title)		{ return this.attr({title}) }
   placeholder(placeholder) { return this.attr({placeholder}) }
 
