@@ -1150,13 +1150,13 @@ class ON
 // A DOM.styles proxy for class _E below
 const Styles = (props =>
   {
-    return e => new Proxy(e,
+    return e => new Proxy({},
       { get: function (ob, prop, receiver)
         {
           const p = props[prop];
-          if (!p) throw new ReferenceError('unknown property '+prop);
+          if (!p) throw new ReferenceError(`unknown property ${prop}`);
           if (isString(p)) prop=p;
-          return ob.$.style[prop];
+          return e.$.style[prop];
           // Note that (perhaps next needs receiver = ob.$.style, but it works in Chrome!):
           // return Reflect.get(ob.$.style, prop, receiver); fails on FF with
           // Uncaught TypeError: 'get alignContent' called on an object that does not implement interface CSS2Properties.
@@ -1167,16 +1167,18 @@ const Styles = (props =>
       , set: function (ob, prop, val)
         {
           const p = props[prop];
-          if (!p) throw new ReferenceError('unknown property '+prop);
+          if (!p) throw new ReferenceError(`unknown property ${prop}`);
           if (isString(p)) prop=p;
-          ob.style({[prop]:val});
+          e.style({[prop]:val});
           return true;
         }
-      , defineProperty: _ => false
-      , deleteProperty: _ => false
-      , has: function (ob, prop) { return !!props[prop] }
-      , isExtensible: _ => false
-      , preventExtensions: _ => true
+      , defineProperty:		_ => false
+      , deleteProperty:		_ => false
+      , has:			function (ob, prop) { return !!props[prop] }
+      , isExtensible:		_ => false
+      , preventExtensions:	_ => true
+      , ownKeys:		() => Array.from(Object.keys(props))	// allow enumeration: for (const _ in e.$style)
+      , getOwnPropertyDescriptor: function(ob, prop) { return {enumerable:true,configurable:true,value:e[prop]} }
       });
   })(
   { // https://www.w3schools.com/jsref/dom_obj_style.asp
@@ -1828,9 +1830,26 @@ class _E extends _E0
   get SPAN()		{ return this._MK('span') }
   get CHECKBOX()	{ return this._MK('input', {type:'checkbox'}) }
   get INPUT()		{ return this._MK('input', {type:'text'}) }
+  // no input type="button". use .button or .BUTTON instead
   get NUMBER()		{ return this._MK('input', {type:'number',size:8}) }
   get COLOR()		{ return this._MK('input', {type:'color'}) }
   get RADIO()		{ return this._MK('input', {type:'radio'}) }
+  get DATE()		{ return this._MK('input', {type:'date'}) }
+  get DATETIME()	{ return this._MK('input', {type:'datetime-local'}) }
+  get EMAIL()		{ return this._MK('input', {type:'email'}) }
+  get FILE()		{ return this.BUTTON.blick((_,e) => { if (_.target === e.$) e.FIRST.$.dispatchEvent(new MouseEvent('click')) })._MK('input', {type:'file',style:'display:none'}).$$ }
+  get HIDDEN()		{ return this._MK('input', {type:'hidden'}) }
+  get IMAGE()		{ return this._MK('input', {type:'image'}) }
+  get MONTH()		{ return this._MK('input', {type:'month'}) }
+  get PASSWORD()	{ return this._MK('input', {type:'password'}) }
+  get RANGE()		{ return this._MK('input', {type:'range'}) }
+  get RESET()		{ return this._MK('input', {type:'reset'}) }
+  get SEARCH()		{ return this._MK('input', {type:'search'}) }
+  get SUBMIT()		{ return this._MK('input', {type:'submit'}) }
+  get TEL()		{ return this._MK('input', {type:'tel'}) }
+  get TIME()		{ return this._MK('input', {type:'time'}) }
+  get URL()		{ return this._MK('input', {type:'url'}) }
+  get WEEK()		{ return this._MK('input', {type:'week'}) }
   get TEXTAREA()	{ return this._MK('textarea') }
   get TABLE()		{ return this._MK('table') }
   get BUTTON()		{ return this._MK('button') }
@@ -1846,7 +1865,8 @@ class _E extends _E0
                                          )
                         }
 
-  urlstate(k)		{ return this.attr({'data-urlstate':k}) }
+  urlstate(k)		{ return this.attr({'data-urlstate':k}) }	// see UrlState below
+  tabindex(_)		{ return this.attr({tabindex:_|0}) }		// set/enable the tabindex
 
   get DL()		{ return this._MK('dl') }
   get DT()		{ return this._MK('dt') }
@@ -1942,10 +1962,10 @@ class _E extends _E0
   // see ModFn below for modifiers
   click(...a)		{ this.CLICK(...a); return this }
   CLICK(...a)		{ return this._CLICK(true, true, ...a) }
-  // blick is same as click() but in bubble phase
+  // blick is same as click() but in bubble phase without preventDefault
   blick(...a)		{ this.BLICK(...a); return this }
   BLICK(...a)		{ return this._CLICK(false, false, ...a) }
-  // plick is same as blick() but does not do preventDefault.
+  // plick is same as blick() but with preventDefault
   plick(...a)		{ this.PLICK(...a); return this }
   PLICK(...a)		{ return this._CLICK(true, false, ...a) }
   _CLICK(prevent, capture,...a)
