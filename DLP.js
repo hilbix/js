@@ -177,8 +177,8 @@ export class DLP extends Emit
       let got;
       for (const i of _.files)
         {
-	  const org	= fix(i);
-	  org.mode	= mode;
+          const org	= fix(i);
+          org.mode	= mode;
           this.file(i, org);
           got = 1;
         }
