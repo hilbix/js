@@ -1766,7 +1766,7 @@ class _E extends _E0
   ptext(...s)		{ return this.pre().text(...s) }
   value(...s)		{ this.$value = s.join(' '); return this }
   src(s)		{ this.$src = s; return this }
-  asrc(...a)		{ this.Srcblob(...a); return this }	// sets .src in background!
+  asrc(...a)		{ this.Src(...a); return this }	// sets .src in background!
   async Asrc(...a)	// sets .src() from something asynchronously, returning the new .src as a promise
     {
       const b = await Call(...a);
@@ -1932,7 +1932,7 @@ class _E extends _E0
   a(url,text,trg,rel)	{ this.A.href(url).text(text).if$(trg!==void 0, this.target, trg).if$(trg!==void 0||rel!==void 0, this.rel, rel!==void 0 ? rel : trg===true); return this }
   // img(url|blob)
   // img(url|blob, fn, args..)	calls fn(rgs.., IMGelement)
-  img(src, ...a)	{ this.CHAIN(...a,this.IMG.srcblob(src)); return this }	// .img(url, function(args..) { this === E.IMG.src(src) }, args..)
+  img(src, ...a)	{ this.CHAIN(...a,this.IMG.src(src)); return this }	// .img(url, function(args..) { this === E.IMG.src(src) }, args..)
   th(...a)		{ for (const t of a) this.TH.text(t); return this }
   td(...a)		{ for (const t of a) this.TD.text(t); return this }
   tdl(...a)		{ for (const t of a) this.TD.alignleft.text(t); return this }
