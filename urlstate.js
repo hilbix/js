@@ -118,7 +118,7 @@ function getset(_)
           console.warn('UrlState: ignoring INPUT type', _.type, _);
           return dummy;
 
-        case 'radio':		return { get:()=>_.value,	set:v=>{ if (_.value === v) _.checked = true } };
+        case 'radio':		return { get:()=>_.checked ? _.value : void 0,	set:v=>{ if (_.value === v) _.checked = true } };
         case 'checkbox':	return { get:()=>_.checked,	set:v=>_.checked=v };
 
         default:
@@ -151,7 +151,7 @@ return (
 
 //      console.log('UrlState.ADD',id,e.$all,st);
       if (!known.has(e))
-        e.ON('change _value', _ => { st.state = getset(_.target).get() });
+        e.ON('change _value', _ => { st.state = getset(_.target).get() ?? st.state });
       known.add(e);
       return st;
     }
