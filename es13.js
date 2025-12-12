@@ -2046,6 +2046,8 @@ class _E extends _E0
   // like .attr() but for style.  As .style['--custom']='1px' does not work this uses .setProperty()
   // Note that 'prop' can be any of both variants, like 'backgroundColor' and 'background-color' (in Chrome, not tested with FF yet)
   style(a)		{ if (a) for (const b in a) { const c=a[b]; if (c === void 0) for (const e of this.$all) e.style.removeProperty(b); else if (b.includes('-')) for (const e of this.$all) e.style.setProperty(b, c); else for (const e of this.$all) e.style[b]=c } return this }
+  bg(c)		{ return this.style({backgroundColor:c}) }
+  fg(c)		{ return this.style({color:c}) }
 
   // prepend/append to parent
   get prep()		{ return (...c) => { const n=this.$, f=FRAGMENT(); if (n) for (const a of c) for (const b of E(a)) f.append(b); n.prepend(f); return this } }
@@ -2946,6 +2948,28 @@ const UrlState = BrowserCompat(false, ({window}) => {
   run.del	= function () { if (cookie) cookie.del(); return this }
   return run;
 });
+
+// XXX TODO XXX not completely ready yet.
+// This shall return a Promise()
+// - which fulfills with the name saved if file is saved
+// - and catches with error if download is interrupted etc.
+// HOW TO DO THAT?
+// Also missing: How to implement "Save As..."?
+// XXX TODO XXX create extension to use the download-API?
+// XXX TODO XXX have a look into https://github.com/eligrey/FileSaver.js
+// XXX TODO XXX have a look into https://github.com/jimmywarting/StreamSaver.js
+// XXX TODO XXX have a look into https://github.com/whatwg/fs
+const Save	= (data, name, type='application/json;charset=utf-8') =>
+  {
+    name	??= 'unnamed';
+    const download = name.includes('.') ? name : `${name}.${type.split('/')[1].split(';')[0]}`;
+    const href	= URL.createObjectURL(new Blob([data], {type}));
+    E.A.attr({href,download,target:'_blank'}).$.click();
+    URL.revokeObjectURL(href);
+    const p	= PO();
+    p.ok(download);
+    return p.p;
+  }
 
 
 // Why no .POP()/.SHIFT()/.HEAD()/.TAIL()/.FIRST()/.LAST()?  Because this would be very confusing:
