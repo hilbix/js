@@ -1627,6 +1627,22 @@ class _E0 extends Callable
   put(...a) { let o; while (a.length) { const b=a.shift(); if (isFunction(b)) { a=b(this, ...a); continue } if (Array.isArray(b)) b.push(this); else if (!isString(b)) o=b; else o[b]=this }; return this }
   };
 
+// for (X of e)
+// - iterates over all wrapped DOM elements
+// - works for fragments by iterating over the children (contained elements)
+// - X is not wrapped!
+// for (X of e.$all)
+// - similar, but does not work for Fragments!
+// - but allows augmented classes to change behavior of $all
+// for (X of e.__E)
+// - direct access of .$all
+// - THIS IS NO INTERFACE, use .$all (or just the E) instead!
+// - might be replaced by a getter in future which warns not to use it anymore
+//
+// .__e === .__E[0] unless .__e is a Fragment (then .__E.length === 0)
+// Use $	to access (unwrapped) .__e
+// Use $all	to access (unwrapped) .__E
+// Use $$	to access (wrapped) parent node
 class _E extends _E0
   {
   __cache
@@ -1699,20 +1715,31 @@ class _E extends _E0
 //e(e)			{ if (e) this.$ = e; return this }
 
   get $tag()		{ return this.$.nodeName }		// DIV, SPAN, etc.
+  // a setter does not make sense here
   get $text()		{ return this.$.textContent }		// innerText causes reflow (and bad on IE<=11)
   set $text(s)		{ this.allev('text', $ => $.textContent=s) }
   get $align()		{ return this.$style.textAlign }	// .$.align is deprecated
   set $align(a)		{ this.$style.textAlign = a; this.mkev('align') }	// now use CSS
   get $id()		{ return this.$.id }
   set $id(id)		{ this.$.id = id }			// ONLY THE FIRST! ($.id is unique)
+  get $name()		{ return this.$.name }
+  set $name(v)		{ this.name(v) }
   get $value()		{ return this.$.value }
+  get $values()		{ return this.$.value }
   set $value(v)		{ this.allev('value', $ => $.value=v) }
+  get $active()		{ return this.__E.includes(document.activeElement) }
+  get $radios()		{ return E.NAME(this.$name) }
+  // a setter probably does not make sense here
+  get $radioval()	{ return this.$radios.$all.find(_ => _.checked)?.value }
+  set $radioval(v)	{ for (const _ of this.$radios) if (_.value === v) { _.checked=true; break } }
   get $src()		{ return this.$.src }
   set $src(u)		{ this.allev('src', $ => $.src=u) }
   get $alt()		{ return this.$.alt }
   set $alt(u)		{ this.allev('alt', $ => $.alt=u) }
   get $checked()	{ return this.$.checked }
   set $checked(b)	{ b=!!b; this.allev('checked', $ => $.checked=b) }
+  get $checks()		{ return this.$all.filter(_ => _.checked) }
+  // XXX TODO XXX a setter perhaps makes sense here
   get $disabled()	{ return this.$.disabled }
   set $disabled(b)	{ b=!!b; this.allev('disabled', $ => $.disabled=b) }
   get $class()		{ return this.$.classList }
